@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="LMS.Api/LMS.Api.csproj" />
+  <Project Path="LMS.Application/LMS.Application.csproj" />
+  <Project Path="LMS.Domain/LMS.Domain.csproj" />
+  <Project Path="LMS.Infrastructure/LMS.Infrastructure.csproj" />
+  <Project Path="LMS.Web/LMS.Web.csproj" />
+</Solution>
