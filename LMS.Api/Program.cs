@@ -37,6 +37,9 @@ using LMS.Application.Features.Lessons.PublishLesson;
 using LMS.Application.Features.Lessons.UnpublishLesson;
 using LMS.Application.Features.Lessons.UpdateLesson;
 using LMS.Application.Features.Quizzes.CreateQuiz;
+using LMS.Application.Features.Quizzes.GetQuiz;
+using LMS.Application.Features.Quizzes.PublishQuiz;
+using LMS.Application.Features.Quizzes.UpdateQuiz;
 using LMS.Application.Features.Users.Commands.RegisterUser;
 using LMS.Application.Features.Users.Profile;
 using LMS.Application.Interfaces.Authentication;
@@ -277,7 +280,9 @@ builder.Services.AddScoped<GetMyCoursesProgressHandler>();
 
 builder.Services.AddScoped<IQuizRepository,QuizRepository>();
 builder.Services.AddScoped<CreateQuizHandler>();
-
+builder.Services.AddScoped<GetQuizHandler>();
+builder.Services.AddScoped<UpdateQuizHandler>();
+builder.Services.AddScoped<PublishQuizHandler>();
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

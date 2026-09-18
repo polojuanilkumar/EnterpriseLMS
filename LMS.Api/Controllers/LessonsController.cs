@@ -11,6 +11,9 @@ using LMS.Application.Features.Lessons.PublishLesson;
 using LMS.Application.Features.Lessons.UnpublishLesson;
 using LMS.Application.Features.Lessons.UpdateLesson;
 using LMS.Application.Features.Quizzes.CreateQuiz;
+using LMS.Application.Features.Quizzes.GetQuiz;
+using LMS.Application.Features.Quizzes.PublishQuiz;
+using LMS.Application.Features.Quizzes.UpdateQuiz;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -35,6 +38,15 @@ namespace LMS.Api.Controllers
         private readonly GetLessonProgressHandler _getLessonProgressHandler;
 
         private readonly CreateQuizHandler _createQuizHandler;
+        private readonly GetQuizHandler _getQuizHandler;
+
+        private readonly UpdateQuizHandler _updateQuizHandler;
+
+        private readonly PublishQuizHandler _publishQuizHandler;
+
+
+
+
 
         public LessonsController(
             CreateLessonHandler createLessonHandler,
@@ -47,7 +59,7 @@ namespace LMS.Api.Controllers
             StartLessonHandler startLessonHandler, 
             UpdateLessonProgressHandler updateLessonProgressHandler,
             CompleteLessonHandler completeLessonHandler,
-            GetLessonProgressHandler getLessonProgressHandler)
+            GetLessonProgressHandler getLessonProgressHandler, CreateQuizHandler createQuizHandler, GetQuizHandler getQuizHandler, UpdateQuizHandler updateQuizHandler, PublishQuizHandler publishQuizHandler)
         {
             _createLessonHandler = createLessonHandler;
             _getLessonsHandler = getLessonsHandler;
@@ -60,7 +72,10 @@ namespace LMS.Api.Controllers
             _updateLessonProgressHandler = updateLessonProgressHandler;
             _completeLessonHandler = completeLessonHandler;
             _getLessonProgressHandler = getLessonProgressHandler;
-
+            _createQuizHandler = createQuizHandler;
+            _getQuizHandler = getQuizHandler;
+            _updateQuizHandler = updateQuizHandler;
+            _publishQuizHandler = publishQuizHandler;
 
         }
 
@@ -315,6 +330,91 @@ namespace LMS.Api.Controllers
                 success = true,
                 message = "Lesson progress retrieved successfully.",
                 data = result
+            });
+        }
+
+
+
+
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [HttpPost("{lessonId:guid}/quiz")]
+        public async Task<IActionResult> CreateQuiz(
+    Guid lessonId,
+    CreateQuizRequest request,
+    CancellationToken cancellationToken)
+        {
+            var result = await _createQuizHandler.HandleAsync(
+                lessonId,
+                request,
+                cancellationToken);
+
+            return StatusCode(
+                StatusCodes.Status201Created,
+                new
+                {
+                    success = true,
+                    message = "Quiz created successfully.",
+                    data = result
+                });
+        }
+
+
+
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin,Student")]
+        [HttpGet("{lessonId:guid}/quiz")]
+        public async Task<IActionResult> GetQuiz(
+    Guid lessonId,
+    CancellationToken cancellationToken)
+        {
+            var result = await _getQuizHandler.HandleAsync(
+                lessonId,
+                cancellationToken);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Quiz retrieved successfully.",
+                data = result
+            });
+        }
+
+
+
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [HttpPut("{lessonId:guid}/quiz")]
+        public async Task<IActionResult> UpdateQuiz(
+    Guid lessonId,
+    UpdateQuizRequest request,
+    CancellationToken cancellationToken)
+        {
+            var result = await _updateQuizHandler.HandleAsync(
+                lessonId,
+                request,
+                cancellationToken);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Quiz updated successfully.",
+                data = result
+            });
+        }
+
+
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [HttpPatch("{lessonId:guid}/quiz/publish")]
+        public async Task<IActionResult> PublishQuiz(
+    Guid lessonId,
+    CancellationToken cancellationToken)
+        {
+            await _publishQuizHandler.HandleAsync(
+                lessonId,
+                cancellationToken);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Quiz published successfully."
             });
         }
 
