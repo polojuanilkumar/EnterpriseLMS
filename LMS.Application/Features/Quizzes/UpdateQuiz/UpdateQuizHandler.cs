@@ -9,11 +9,13 @@ namespace LMS.Application.Features.Quizzes.UpdateQuiz
     public sealed class UpdateQuizHandler
     {
         private readonly IQuizRepository _quizRepository;
+        private readonly EnsureQuizEditable _ensureQuizEditable;
 
         public UpdateQuizHandler(
-            IQuizRepository quizRepository)
+            IQuizRepository quizRepository, EnsureQuizEditable ensureQuizEditable)
         {
             _quizRepository = quizRepository;
+            _ensureQuizEditable = ensureQuizEditable;
         }
 
         public async Task<QuizResponse> HandleAsync(
@@ -30,6 +32,8 @@ namespace LMS.Application.Features.Quizzes.UpdateQuiz
                 throw new KeyNotFoundException(
                     "Quiz not found.");
             }
+
+            await _ensureQuizEditable.CheckAsync(quiz.Id, cancellationToken);
 
             if (request.PassingPercentage < 0 ||
                 request.PassingPercentage > 100)

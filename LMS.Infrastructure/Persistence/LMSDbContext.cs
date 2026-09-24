@@ -35,6 +35,10 @@ namespace LMS.Infrastructure.Persistence
         public DbSet<LessonProgress> LessonProgresses { get; set; }
 
         public DbSet<Quiz> Quizzes { get; set; }
+
+        public DbSet<QuizQuestion> QuizQuestions { get; set; }
+
+        public DbSet<QuizOption> QuizOptions { get; set; }
         protected override void OnModelCreating(
             ModelBuilder modelBuilder)
         {
@@ -220,6 +224,82 @@ namespace LMS.Infrastructure.Persistence
 
                 entity.HasIndex(x => x.LessonId)
                     .IsUnique();
+            });
+
+            modelBuilder.Entity<QuizQuestion>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.QuizId)
+                    .IsRequired();
+
+                entity.Property(x => x.QuestionText)
+                    .IsRequired()
+                    .HasMaxLength(2000);
+
+                entity.Property(x => x.QuestionType)
+                    .IsRequired();
+
+                entity.Property(x => x.DisplayOrder)
+                    .IsRequired();
+
+                entity.Property(x => x.Marks)
+                    .HasPrecision(5, 2)
+                    .IsRequired();
+
+                entity.Property(x => x.CreatedAt)
+                    .IsRequired();
+
+                entity.Property(x => x.UpdatedAt);
+
+                entity.HasOne<Quiz>()
+                    .WithMany()
+                    .HasForeignKey(x => x.QuizId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => new
+                {
+                    x.QuizId,
+                    x.DisplayOrder
+                })
+                .IsUnique();
+            });
+
+
+
+            modelBuilder.Entity<QuizOption>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.QuestionId)
+                    .IsRequired();
+
+                entity.Property(x => x.OptionText)
+                    .IsRequired()
+                    .HasMaxLength(1000);
+
+                entity.Property(x => x.IsCorrect)
+                    .IsRequired();
+
+                entity.Property(x => x.DisplayOrder)
+                    .IsRequired();
+
+                entity.Property(x => x.CreatedAt)
+                    .IsRequired();
+
+                entity.Property(x => x.UpdatedAt);
+
+                entity.HasOne<QuizQuestion>()
+                    .WithMany()
+                    .HasForeignKey(x => x.QuestionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => new
+                {
+                    x.QuestionId,
+                    x.DisplayOrder
+                })
+                .IsUnique();
             });
 
             modelBuilder.ApplyConfigurationsFromAssembly(

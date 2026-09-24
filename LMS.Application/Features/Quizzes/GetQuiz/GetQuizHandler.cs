@@ -18,6 +18,7 @@ namespace LMS.Application.Features.Quizzes.GetQuiz
 
         public async Task<QuizResponse> HandleAsync(
             Guid lessonId,
+            bool canViewUnpublished,
             CancellationToken cancellationToken = default)
         {
             var quiz = await _quizRepository.GetByLessonIdAsync(
@@ -29,7 +30,10 @@ namespace LMS.Application.Features.Quizzes.GetQuiz
                 throw new KeyNotFoundException(
                     "Quiz not found.");
             }
-
+            if (!quiz.IsPublished && !canViewUnpublished)
+            {
+                throw new KeyNotFoundException("Quiz not found.");
+            }
             return new QuizResponse
             {
                 Id = quiz.Id,
