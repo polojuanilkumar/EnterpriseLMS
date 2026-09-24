@@ -1,6 +1,7 @@
 ﻿using LMS.Application.Features.QuizOptions.CreateOption;
 using LMS.Application.Features.QuizOptions.DeleteOption;
 using LMS.Application.Features.QuizOptions.GetOptions;
+using LMS.Application.Features.QuizOptions.GetStudentOptions;
 using LMS.Application.Features.QuizOptions.UpdateOption;
 using LMS.Application.Features.QuizQuestions.CreateQuestion;
 using LMS.Application.Features.QuizQuestions.DeleteQuestion;
@@ -32,12 +33,14 @@ namespace LMS.Api.Controllers
 
         private readonly GetOptionsHandler _getOptionsHandler;
 
+        private readonly GetStudentOptionsHandler _getStudentOptionsHandler;
+
         private readonly UpdateOptionHandler _updateOptionHandler;
 
         private readonly DeleteOptionHandler _deleteOptionHandler;
 
         public QuizQuestionsController(
-            CreateQuestionHandler createQuestionHandler, GetQuestionsHandler getQuestionsHandler, GetQuestionByIdHandler getQuestionByIdHandler, UpdateQuestionHandler updateQuestionHandler, DeleteQuestionHandler deleteQuestionHandler, CreateOptionHandler createOptionHandler, GetOptionsHandler getOptionsHandler, UpdateOptionHandler updateOptionHandler, DeleteOptionHandler deleteOptionHandler)
+            CreateQuestionHandler createQuestionHandler, GetQuestionsHandler getQuestionsHandler, GetQuestionByIdHandler getQuestionByIdHandler, UpdateQuestionHandler updateQuestionHandler, DeleteQuestionHandler deleteQuestionHandler, CreateOptionHandler createOptionHandler, GetOptionsHandler getOptionsHandler, UpdateOptionHandler updateOptionHandler, DeleteOptionHandler deleteOptionHandler, GetStudentOptionsHandler getStudentOptionsHandler)
         {
             _createQuestionHandler = createQuestionHandler;
             _getQuestionsHandler = getQuestionsHandler;
@@ -46,6 +49,7 @@ namespace LMS.Api.Controllers
             _deleteQuestionHandler = deleteQuestionHandler;
             _createOptionHandler = createOptionHandler;
             _getOptionsHandler = getOptionsHandler;
+            _getStudentOptionsHandler = getStudentOptionsHandler;
             _updateOptionHandler = updateOptionHandler;
             _deleteOptionHandler = deleteOptionHandler;
         }
@@ -225,13 +229,35 @@ namespace LMS.Api.Controllers
 
 
         [HttpGet("{questionId:guid}/options")]
-        [Authorize(Roles = "Instructor,Admin,SuperAdmin,Student")]
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetOptions(
     Guid quizId,
     Guid questionId,
     CancellationToken cancellationToken)
         {
             var options = await _getOptionsHandler.HandleAsync(
+                quizId,
+                questionId,
+                cancellationToken);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Options retrieved successfully.",
+                data = options,
+                errors = (object?)null
+            });
+        }
+
+
+        [HttpGet("{questionId:guid}/options/student")]
+        [Authorize(Roles = "Student")]
+        public async Task<IActionResult> GetStudentOptions(
+            Guid quizId,
+            Guid questionId,
+            CancellationToken cancellationToken)
+        {
+            var options = await _getStudentOptionsHandler.HandleAsync(
                 quizId,
                 questionId,
                 cancellationToken);
