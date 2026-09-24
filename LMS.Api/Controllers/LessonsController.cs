@@ -11,8 +11,10 @@ using LMS.Application.Features.Lessons.PublishLesson;
 using LMS.Application.Features.Lessons.UnpublishLesson;
 using LMS.Application.Features.Lessons.UpdateLesson;
 using LMS.Application.Features.Quizzes.CreateQuiz;
+using LMS.Application.Features.Quizzes.DeleteQuiz;
 using LMS.Application.Features.Quizzes.GetQuiz;
 using LMS.Application.Features.Quizzes.PublishQuiz;
+using LMS.Application.Features.Quizzes.UnpublishQuiz;
 using LMS.Application.Features.Quizzes.UpdateQuiz;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -45,6 +47,13 @@ namespace LMS.Api.Controllers
         private readonly PublishQuizHandler _publishQuizHandler;
 
 
+        private readonly UnpublishQuizHandler _unpublishQuizHandler;
+
+        private readonly DeleteQuizHandler _deleteQuizHandler;
+
+
+
+
 
 
 
@@ -59,7 +68,7 @@ namespace LMS.Api.Controllers
             StartLessonHandler startLessonHandler, 
             UpdateLessonProgressHandler updateLessonProgressHandler,
             CompleteLessonHandler completeLessonHandler,
-            GetLessonProgressHandler getLessonProgressHandler, CreateQuizHandler createQuizHandler, GetQuizHandler getQuizHandler, UpdateQuizHandler updateQuizHandler, PublishQuizHandler publishQuizHandler)
+            GetLessonProgressHandler getLessonProgressHandler, CreateQuizHandler createQuizHandler, GetQuizHandler getQuizHandler, UpdateQuizHandler updateQuizHandler, PublishQuizHandler publishQuizHandler, UnpublishQuizHandler unpublishQuizHandler, DeleteQuizHandler deleteQuizHandler)
         {
             _createLessonHandler = createLessonHandler;
             _getLessonsHandler = getLessonsHandler;
@@ -76,6 +85,8 @@ namespace LMS.Api.Controllers
             _getQuizHandler = getQuizHandler;
             _updateQuizHandler = updateQuizHandler;
             _publishQuizHandler = publishQuizHandler;
+            _unpublishQuizHandler = unpublishQuizHandler;
+            _deleteQuizHandler = deleteQuizHandler;
 
         }
 
@@ -366,8 +377,14 @@ namespace LMS.Api.Controllers
     Guid lessonId,
     CancellationToken cancellationToken)
         {
+            var canViewUnpublished =
+                User.IsInRole("Instructor") ||
+                User.IsInRole("Admin") ||
+                User.IsInRole("SuperAdmin");
+
             var result = await _getQuizHandler.HandleAsync(
                 lessonId,
+                canViewUnpublished,
                 cancellationToken);
 
             return Ok(new
@@ -415,6 +432,42 @@ namespace LMS.Api.Controllers
             {
                 success = true,
                 message = "Quiz published successfully."
+            });
+        }
+
+
+
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [HttpPatch("{lessonId:guid}/quiz/unpublish")]
+        public async Task<IActionResult> UnpublishQuiz(
+    Guid lessonId,
+    CancellationToken cancellationToken)
+        {
+            await _unpublishQuizHandler.HandleAsync(
+                lessonId,
+                cancellationToken);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Quiz unpublished successfully."
+            });
+        }
+
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [HttpDelete("{lessonId:guid}/quiz")]
+        public async Task<IActionResult> DeleteQuiz(
+    Guid lessonId,
+    CancellationToken cancellationToken)
+        {
+            await _deleteQuizHandler.HandleAsync(
+                lessonId,
+                cancellationToken);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Quiz deleted successfully."
             });
         }
 
