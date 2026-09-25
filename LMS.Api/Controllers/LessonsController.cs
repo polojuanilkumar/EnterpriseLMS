@@ -357,7 +357,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateQuiz(
     Guid lessonId,
     CreateQuizRequest request,
@@ -433,7 +433,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateQuiz(
     Guid lessonId,
     UpdateQuizRequest request,
@@ -459,7 +459,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> PublishQuiz(
     Guid lessonId,
     CancellationToken cancellationToken)
@@ -482,7 +482,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK, Description = "Success envelope contains only success and message; data and errors are omitted.")]
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UnpublishQuiz(
     Guid lessonId,
     CancellationToken cancellationToken)
@@ -504,7 +504,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteQuiz(
     Guid lessonId,
     CancellationToken cancellationToken)
