@@ -1,4 +1,4 @@
-﻿using LMS.Application.Features.Quizzes.Common;
+using LMS.Application.Features.Quizzes.Common;
 using LMS.Application.Interfaces.QuizOptions;
 using LMS.Application.Interfaces.QuizQuestions;
 using System;
@@ -24,7 +24,14 @@ namespace LMS.Application.Features.QuizOptions.DeleteOption
             _ensureQuizEditable = ensureQuizEditable;
         }
 
-        public async Task HandleAsync(
+        public Task HandleAsync(
+            Guid quizId,
+            Guid questionId,
+            Guid optionId,
+            CancellationToken cancellationToken = default)
+            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, questionId, optionId, token), cancellationToken);
+
+        private async Task HandleCoreAsync(
             Guid quizId,
             Guid questionId,
             Guid optionId,

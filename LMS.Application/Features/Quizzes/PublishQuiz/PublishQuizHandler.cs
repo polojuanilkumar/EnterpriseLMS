@@ -1,5 +1,6 @@
 ﻿using LMS.Application.Interfaces.QuizOptions;
 using LMS.Application.Interfaces.QuizQuestions;
+using LMS.Application.Features.Quizzes.Common;
 using LMS.Application.Interfaces.Quizzes;
 using LMS.Domain.Entities;
 using System;
@@ -13,18 +14,27 @@ namespace LMS.Application.Features.Quizzes.PublishQuiz
         private readonly IQuizRepository _quizRepository;
         private readonly IQuizQuestionRepository _questionRepository;
         private readonly IQuizOptionRepository _optionRepository;
+        private readonly EnsureQuizEditable _ensureQuizEditable;
 
         public PublishQuizHandler(
             IQuizRepository quizRepository,
             IQuizQuestionRepository questionRepository,
-            IQuizOptionRepository optionRepository)
+            IQuizOptionRepository optionRepository,
+            EnsureQuizEditable ensureQuizEditable)
         {
             _quizRepository = quizRepository;
             _questionRepository = questionRepository;
             _optionRepository = optionRepository;
+            _ensureQuizEditable = ensureQuizEditable;
         }
 
-        public async Task HandleAsync(
+        public Task HandleAsync(
+            Guid lessonId,
+            CancellationToken cancellationToken = default)
+            => _ensureQuizEditable.ExecuteForLessonAsync(lessonId,
+                token => HandleCoreAsync(lessonId, token), cancellationToken);
+
+        private async Task HandleCoreAsync(
             Guid lessonId,
             CancellationToken cancellationToken = default)
         {

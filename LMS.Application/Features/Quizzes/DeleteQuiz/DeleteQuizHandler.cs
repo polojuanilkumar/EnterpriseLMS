@@ -1,4 +1,4 @@
-﻿using LMS.Application.Features.Quizzes.Common;
+using LMS.Application.Features.Quizzes.Common;
 using LMS.Application.Interfaces.Quizzes;
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,12 @@ namespace LMS.Application.Features.Quizzes.DeleteQuiz
             _ensureQuizEditable = ensureQuizEditable;
         }
 
-        public async Task HandleAsync(
+        public Task HandleAsync(
+            Guid lessonId,
+            CancellationToken cancellationToken = default)
+            => _ensureQuizEditable.ExecuteForLessonAsync(lessonId, token => HandleCoreAsync(lessonId, token), cancellationToken);
+
+        private async Task HandleCoreAsync(
             Guid lessonId,
             CancellationToken cancellationToken = default)
         {

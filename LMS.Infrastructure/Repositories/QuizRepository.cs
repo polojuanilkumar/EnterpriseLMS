@@ -56,5 +56,9 @@ namespace LMS.Infrastructure.Repositories
         {
             _context.Quizzes.Remove(quiz);
         }
+
+        public Task<Guid?> GetIdByLessonIdAsync(Guid lessonId, CancellationToken cancellationToken = default)
+            => _context.Quizzes.Where(x => x.LessonId == lessonId)
+                .Select(x => (Guid?)x.Id).SingleOrDefaultAsync(cancellationToken);
     }
 }
