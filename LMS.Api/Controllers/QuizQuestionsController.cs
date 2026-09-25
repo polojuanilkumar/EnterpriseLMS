@@ -64,7 +64,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateQuestion(
             Guid quizId,
             [FromBody] CreateQuestionRequest request,
@@ -210,7 +210,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateQuestion(
     Guid quizId,
     Guid questionId,
@@ -240,7 +240,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteQuestion(
     Guid quizId,
     Guid questionId,
@@ -269,7 +269,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateOption(
     Guid quizId,
     Guid questionId,
@@ -299,7 +299,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<QuizOptionResponse>>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOptions(
     Guid quizId,
     Guid questionId,
@@ -369,7 +369,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateOption(
     Guid quizId,
     Guid questionId,
@@ -400,7 +400,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteOption(
     Guid quizId,
     Guid questionId,

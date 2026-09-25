@@ -45,6 +45,9 @@ namespace LMS.Api.Middleware
             context.Response.StatusCode =
                 exception switch
                 {
+                    KeyNotFoundException =>
+                        (int)HttpStatusCode.NotFound,
+
                     InvalidOperationException =>
                         (int)HttpStatusCode.Conflict,
 
