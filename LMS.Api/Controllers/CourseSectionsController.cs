@@ -7,6 +7,7 @@ using LMS.Application.Features.CourseSections.UpdateCourseSection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace LMS.Api.Controllers
 {
@@ -36,25 +37,43 @@ namespace LMS.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         public async Task<IActionResult> Create(
             Guid courseId,
             CreateCourseSectionRequest request,
             CancellationToken cancellationToken)
         {
-            var section =
-                await _createHandler.HandleAsync(
-                    courseId,
-                    request,
-                    cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
+            {
+                return Unauthorized();
+            }
 
-            return StatusCode(
-                StatusCodes.Status201Created,
-                new
-                {
-                    success = true,
-                    message = "Course section created successfully.",
-                    data = section
-                });
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                var section =
+                    await _createHandler.HandleAsync(
+                        courseId,
+                        request,
+                        currentUserId,
+                        isAdmin,
+                        cancellationToken);
+
+                return StatusCode(
+                    StatusCodes.Status201Created,
+                    new
+                    {
+                        success = true,
+                        message = "Course section created successfully.",
+                        data = section
+                    });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
         [HttpGet]
@@ -96,43 +115,79 @@ namespace LMS.Api.Controllers
         }
 
         [HttpPut("{id:guid}")]
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         public async Task<IActionResult> Update(
             Guid courseId,
             Guid id,
             UpdateCourseSectionRequest request,
             CancellationToken cancellationToken)
         {
-            var section =
-                await _updateHandler.HandleAsync(
-                    courseId,
-                    id,
-                    request,
-                    cancellationToken);
-
-            return Ok(new
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
             {
-                success = true,
-                message = "Course section updated successfully.",
-                data = section
-            });
+                return Unauthorized();
+            }
+
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                var section =
+                    await _updateHandler.HandleAsync(
+                        courseId,
+                        id,
+                        request,
+                        currentUserId,
+                        isAdmin,
+                        cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Course section updated successfully.",
+                    data = section
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
         [HttpDelete("{id:guid}")]
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         public async Task<IActionResult> Delete(
             Guid courseId,
             Guid id,
             CancellationToken cancellationToken)
         {
-            await _deleteHandler.HandleAsync(
-                courseId,
-                id,
-                cancellationToken);
-
-            return Ok(new
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
             {
-                success = true,
-                message = "Course section deleted successfully."
-            });
+                return Unauthorized();
+            }
+
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                await _deleteHandler.HandleAsync(
+                    courseId,
+                    id,
+                    currentUserId,
+                    isAdmin,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Course section deleted successfully."
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
     }
 }

@@ -27,6 +27,8 @@ namespace LMS.Application.Features.CourseSections.UpdateCourseSection
             Guid courseId,
             Guid sectionId,
             UpdateCourseSectionRequest request,
+            Guid currentUserId,
+            bool isAdmin,
             CancellationToken cancellationToken = default)
         {
             var course =
@@ -50,6 +52,12 @@ namespace LMS.Application.Features.CourseSections.UpdateCourseSection
             {
                 throw new KeyNotFoundException(
                     "Course section not found.");
+            }
+
+            if (!isAdmin && course.InstructorId != currentUserId)
+            {
+                throw new UnauthorizedAccessException(
+                    "You are not authorized to update sections in this course.");
             }
 
             if (string.IsNullOrWhiteSpace(request.Title))
