@@ -18,6 +18,10 @@ namespace LMS.Application.Interfaces.QuizAttempts
             CancellationToken cancellationToken = default);
         Task<QuizAttempt?> GetByIdAndQuizAndUserAsync(Guid attemptId, Guid quizId, Guid userId,
             CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<QuizAttemptAnswer>> GetAnswersAsync(Guid attemptId,
+            CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<QuizAttemptAnswerOption>> GetSelectedOptionsAsync(Guid attemptId,
+            CancellationToken cancellationToken = default);
         Task AddAsync(QuizAttempt attempt, CancellationToken cancellationToken = default);
         Task AddAnswersAsync(IEnumerable<QuizAttemptAnswer> answers,
             IEnumerable<QuizAttemptAnswerOption> selectedOptions, CancellationToken cancellationToken = default);

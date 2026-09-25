@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using LMS.Application.Common.Models;
+using LMS.Application.Features.QuizAttempts.GetQuizAttemptAnswers;
 using LMS.Application.Features.QuizAttempts.GetQuizAttemptResult;
 using LMS.Application.Features.QuizAttempts.GetQuizAttempts;
 using LMS.Application.Features.QuizAttempts.StartQuizAttempt;
@@ -18,14 +19,17 @@ namespace LMS.Api.Controllers
         private readonly SubmitQuizAttemptHandler _submitHandler;
         private readonly GetQuizAttemptResultHandler _resultHandler;
         private readonly GetQuizAttemptsHandler _attemptsHandler;
+        private readonly GetQuizAttemptAnswersHandler _answersHandler;
 
         public QuizAttemptsController(StartQuizAttemptHandler startHandler, SubmitQuizAttemptHandler submitHandler,
-            GetQuizAttemptResultHandler resultHandler, GetQuizAttemptsHandler attemptsHandler)
+            GetQuizAttemptResultHandler resultHandler, GetQuizAttemptsHandler attemptsHandler,
+            GetQuizAttemptAnswersHandler answersHandler)
         {
             _startHandler = startHandler;
             _submitHandler = submitHandler;
             _resultHandler = resultHandler;
             _attemptsHandler = attemptsHandler;
+            _answersHandler = answersHandler;
         }
 
         [HttpGet]
@@ -53,6 +57,30 @@ namespace LMS.Api.Controllers
                 var result = await _resultHandler.HandleAsync(quizId, attemptId, userId, cancellationToken);
                 return Ok(ApiResponse<GetQuizAttemptResultResponse>.Ok(result,
                     "Quiz attempt result retrieved successfully."));
+            }
+            catch (KeyNotFoundException exception)
+            {
+                return NotFound(ApiResponse<object>.Fail(exception.Message));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Conflict(ApiResponse<object>.Fail(exception.Message));
+            }
+        }
+
+        [HttpGet("{attemptId:guid}/answers")]
+        public async Task<IActionResult> GetAnswers(Guid quizId, Guid attemptId,
+            CancellationToken cancellationToken)
+        {
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
+
+            try
+            {
+                var result = await _answersHandler.HandleAsync(quizId, attemptId, userId, cancellationToken);
+                return Ok(ApiResponse<GetQuizAttemptAnswersResponse>.Ok(result,
+                    "Quiz attempt answers retrieved successfully."));
             }
             catch (KeyNotFoundException exception)
             {
