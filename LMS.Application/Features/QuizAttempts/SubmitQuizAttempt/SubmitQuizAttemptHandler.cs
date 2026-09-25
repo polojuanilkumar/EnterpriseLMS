@@ -1,3 +1,4 @@
+using LMS.Application.Features.Quizzes.Common;
 using LMS.Application.Interfaces.QuizAttempts;
 using LMS.Application.Interfaces.QuizOptions;
 using LMS.Application.Interfaces.QuizQuestions;
@@ -58,7 +59,7 @@ namespace LMS.Application.Features.QuizAttempts.SubmitQuizAttempt
                 if (request.Answers.Any(x => !questionIds.Contains(x.QuestionId)))
                     throw new ArgumentException("An answer references a question outside this quiz.");
                 var possibleMarks = questions.Sum(x => x.Marks);
-                if (questions.Count == 0 || questions.Any(x => x.Marks <= 0)
+                if (QuizConfigurationValidation.GetQuestionsError(questions) is not null
                     || possibleMarks != attempt.PossibleMarks)
                     throw new InvalidOperationException("Quiz marks changed or are invalid for this attempt.");
 
@@ -81,15 +82,9 @@ namespace LMS.Application.Features.QuizAttempts.SubmitQuizAttempt
                     if (selectedIds.Any(id => !optionById.ContainsKey(id)))
                         throw new ArgumentException("A selected option does not belong to its question.");
                     var correctIds = options.Where(x => x.IsCorrect).Select(x => x.Id).ToHashSet();
-                    var validKey = question.QuestionType switch
-                    {
-                        QuestionType.SingleChoice => options.Count >= 2 && correctIds.Count == 1,
-                        QuestionType.TrueFalse => options.Count == 2 && correctIds.Count == 1,
-                        QuestionType.MultipleChoice => options.Count >= 2 && correctIds.Count >= 2,
-                        _ => false
-                    };
-                    if (!validKey)
-                        throw new InvalidOperationException("The quiz contains an invalid question configuration.");
+                    var error = QuizConfigurationValidation.GetQuestionError(question, options);
+                    if (error is not null)
+                        throw new InvalidOperationException(error);
 
                     // Empty selections always score zero. All question types use exact-set matching.
                     var isCorrect = selectedIds.Count > 0 && correctIds.SetEquals(selectedIds);
