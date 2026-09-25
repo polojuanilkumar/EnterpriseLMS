@@ -1,3 +1,4 @@
+using LMS.Application.Features.QuizQuestions.Common;
 using System.Security.Claims;
 using LMS.Application.Common.Models;
 ﻿using LMS.Application.Features.QuizOptions.CreateOption;
@@ -58,6 +59,12 @@ namespace LMS.Api.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [ProducesResponseType(typeof(ApiResponse<Dictionary<string, Guid>>), StatusCodes.Status201Created, Description = "Success envelope with data containing the questionId GUID.")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest, Description = "ApiResponse<object> for invalid argument values; ValidationProblemDetails for automatic model binding or validation failures.")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
         public async Task<IActionResult> CreateQuestion(
             Guid quizId,
             [FromBody] CreateQuestionRequest request,
@@ -86,6 +93,10 @@ namespace LMS.Api.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin,Student")]
+        [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<QuizQuestionResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Read access denied returns ApiResponse<object>; role authorization failure has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetQuestions(
     Guid quizId,
     CancellationToken cancellationToken)
@@ -131,6 +142,10 @@ namespace LMS.Api.Controllers
 
         [HttpGet("{questionId:guid}")]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin,Student")]
+        [ProducesResponseType(typeof(ApiResponse<QuizQuestionResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Read access denied returns ApiResponse<object>; role authorization failure has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetQuestionById(
     Guid quizId,
     Guid questionId,
@@ -190,6 +205,12 @@ namespace LMS.Api.Controllers
 
         [HttpPut("{questionId:guid}")]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest, Description = "ApiResponse<object> for invalid argument values; ValidationProblemDetails for automatic model binding or validation failures.")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
         public async Task<IActionResult> UpdateQuestion(
     Guid quizId,
     Guid questionId,
@@ -215,6 +236,11 @@ namespace LMS.Api.Controllers
 
         [HttpDelete("{questionId:guid}")]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
         public async Task<IActionResult> DeleteQuestion(
     Guid quizId,
     Guid questionId,
@@ -238,6 +264,12 @@ namespace LMS.Api.Controllers
 
         [HttpPost("{questionId:guid}/options")]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [ProducesResponseType(typeof(ApiResponse<Dictionary<string, Guid>>), StatusCodes.Status201Created, Description = "Success envelope with data containing the optionId GUID.")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest, Description = "ApiResponse<object> for invalid argument values; ValidationProblemDetails for automatic model binding or validation failures.")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
         public async Task<IActionResult> CreateOption(
     Guid quizId,
     Guid questionId,
@@ -264,6 +296,10 @@ namespace LMS.Api.Controllers
 
         [HttpGet("{questionId:guid}/options")]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<QuizOptionResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
         public async Task<IActionResult> GetOptions(
     Guid quizId,
     Guid questionId,
@@ -286,6 +322,10 @@ namespace LMS.Api.Controllers
 
         [HttpGet("{questionId:guid}/options/student")]
         [Authorize(Roles = "Student")]
+        [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<StudentQuizOptionResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Read access denied returns ApiResponse<object>; role authorization failure has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetStudentOptions(
             Guid quizId,
             Guid questionId,
@@ -324,6 +364,12 @@ namespace LMS.Api.Controllers
 
         [HttpPut("{questionId:guid}/options/{optionId:guid}")]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest, Description = "ApiResponse<object> for invalid argument values; ValidationProblemDetails for automatic model binding or validation failures.")]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
         public async Task<IActionResult> UpdateOption(
     Guid quizId,
     Guid questionId,
@@ -350,6 +396,11 @@ namespace LMS.Api.Controllers
 
         [HttpDelete("{questionId:guid}/options/{optionId:guid}")]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError, Description = "Missing resources throw KeyNotFoundException, which the global middleware currently maps to 500.")]
         public async Task<IActionResult> DeleteOption(
     Guid quizId,
     Guid questionId,
