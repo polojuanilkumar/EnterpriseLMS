@@ -107,6 +107,19 @@ namespace LMS.Infrastructure.Repositories
                 x => x.Id == attemptId && x.QuizId == quizId && x.UserId == userId,
                 cancellationToken);
 
+        public async Task<IReadOnlyList<QuizAttemptAnswer>> GetAnswersAsync(Guid attemptId,
+            CancellationToken cancellationToken = default)
+            => await _context.QuizAttemptAnswers.AsNoTracking()
+                .Where(x => x.AttemptId == attemptId).ToListAsync(cancellationToken);
+
+        public async Task<IReadOnlyList<QuizAttemptAnswerOption>> GetSelectedOptionsAsync(Guid attemptId,
+            CancellationToken cancellationToken = default)
+            => await (from option in _context.QuizAttemptAnswerOptions.AsNoTracking()
+                      join answer in _context.QuizAttemptAnswers.AsNoTracking()
+                          on option.AnswerId equals answer.Id
+                      where answer.AttemptId == attemptId
+                      select option).ToListAsync(cancellationToken);
+
         public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
             => await _context.SaveChangesAsync(cancellationToken);
 
