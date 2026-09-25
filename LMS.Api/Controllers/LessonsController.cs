@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using LMS.Application.Common.Models;
 ﻿using LMS.Application.Features.LessonProgress.CompleteLesson;
 using LMS.Application.Features.LessonProgress.GetProgress;
 using LMS.Application.Features.LessonProgress.StartLesson;
@@ -65,7 +67,7 @@ namespace LMS.Api.Controllers
             DeleteLessonHandler deleteLessonHandler,
             PublishLessonHandler publishLessonHandler,
             UnpublishLessonHandler unpublishLessonHandler,
-            StartLessonHandler startLessonHandler, 
+            StartLessonHandler startLessonHandler,
             UpdateLessonProgressHandler updateLessonProgressHandler,
             CompleteLessonHandler completeLessonHandler,
             GetLessonProgressHandler getLessonProgressHandler, CreateQuizHandler createQuizHandler, GetQuizHandler getQuizHandler, UpdateQuizHandler updateQuizHandler, PublishQuizHandler publishQuizHandler, UnpublishQuizHandler unpublishQuizHandler, DeleteQuizHandler deleteQuizHandler)
@@ -382,17 +384,33 @@ namespace LMS.Api.Controllers
                 User.IsInRole("Admin") ||
                 User.IsInRole("SuperAdmin");
 
-            var result = await _getQuizHandler.HandleAsync(
-                lessonId,
-                canViewUnpublished,
-                cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Quiz retrieved successfully.",
-                data = result
-            });
+                var result = await _getQuizHandler.HandleAsync(
+                    lessonId,
+                    userId,
+                    canViewUnpublished,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Quiz retrieved successfully.",
+                    data = result
+                });
+            }
+            catch (KeyNotFoundException exception)
+            {
+                return NotFound(ApiResponse<object>.Fail(exception.Message));
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 

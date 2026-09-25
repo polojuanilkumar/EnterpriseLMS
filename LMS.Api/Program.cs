@@ -301,6 +301,7 @@ builder.Services.AddScoped<GetMyCoursesProgressHandler>();
 
 builder.Services.AddScoped<IQuizRepository,QuizRepository>();
 builder.Services.AddScoped<CreateQuizHandler>();
+builder.Services.AddScoped<EnsureQuizReadable>();
 builder.Services.AddScoped<GetQuizHandler>();
 builder.Services.AddScoped<UpdateQuizHandler>();
 builder.Services.AddScoped<PublishQuizHandler>();
