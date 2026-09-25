@@ -14,7 +14,6 @@ namespace LMS.Application.Features.QuizAttempts.GetQuizAttemptAnswers
         public string QuestionText { get; init; } = string.Empty;
         public QuestionType QuestionType { get; init; }
         public decimal Marks { get; init; }
-        public decimal AwardedMarks { get; init; }
         public IReadOnlyList<QuizAttemptSelectedOptionResponse> SelectedOptions { get; init; } = [];
     }
 

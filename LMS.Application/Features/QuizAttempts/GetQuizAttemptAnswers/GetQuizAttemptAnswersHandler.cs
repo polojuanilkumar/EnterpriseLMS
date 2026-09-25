@@ -33,7 +33,6 @@ namespace LMS.Application.Features.QuizAttempts.GetQuizAttemptAnswers
                     QuestionText = answer.QuestionTextSnapshot,
                     QuestionType = answer.QuestionTypeSnapshot,
                     Marks = answer.MarksSnapshot,
-                    AwardedMarks = answer.AwardedMarks,
                     SelectedOptions = optionsByAnswer[answer.Id].OrderBy(x => x.OptionId)
                         .Select(option => new QuizAttemptSelectedOptionResponse
                         {
