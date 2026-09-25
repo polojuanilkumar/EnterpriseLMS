@@ -1,5 +1,7 @@
 ﻿using LMS.Application.Common.Models;
 using System.Net;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 
 namespace LMS.Api.Middleware
@@ -8,13 +10,16 @@ namespace LMS.Api.Middleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<GlobalExceptionMiddleware> _logger;
+        private readonly JsonSerializerOptions _jsonOptions;
 
         public GlobalExceptionMiddleware(
             RequestDelegate next,
-            ILogger<GlobalExceptionMiddleware> logger)
+            ILogger<GlobalExceptionMiddleware> logger,
+            IOptions<JsonOptions> jsonOptions)
         {
             _next = next;
             _logger = logger;
+            _jsonOptions = jsonOptions.Value.JsonSerializerOptions;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -35,7 +40,7 @@ namespace LMS.Api.Middleware
             }
         }
 
-        private static async Task HandleExceptionAsync(
+        private async Task HandleExceptionAsync(
             HttpContext context,
             Exception exception)
         {
@@ -60,9 +65,11 @@ namespace LMS.Api.Middleware
 
             var response =
                 ApiResponse<object>.Fail(
-                    exception.Message);
+                    context.Response.StatusCode == (int)HttpStatusCode.InternalServerError
+                        ? "An unexpected error occurred."
+                        : exception.Message);
 
-            var json = JsonSerializer.Serialize(response);
+            var json = JsonSerializer.Serialize(response, _jsonOptions);
 
             await context.Response.WriteAsync(json);
         }
