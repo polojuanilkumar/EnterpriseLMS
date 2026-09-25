@@ -33,6 +33,9 @@ namespace LMS.Api.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<GetQuizAttemptsResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
         public async Task<IActionResult> GetAttempts(Guid quizId, CancellationToken cancellationToken)
         {
             if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
@@ -45,6 +48,11 @@ namespace LMS.Api.Controllers
         }
 
         [HttpGet("{attemptId:guid}/result")]
+        [ProducesResponseType(typeof(ApiResponse<GetQuizAttemptResultResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> GetResult(Guid quizId, Guid attemptId,
             CancellationToken cancellationToken)
         {
@@ -69,6 +77,11 @@ namespace LMS.Api.Controllers
         }
 
         [HttpGet("{attemptId:guid}/answers")]
+        [ProducesResponseType(typeof(ApiResponse<GetQuizAttemptAnswersResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> GetAnswers(Guid quizId, Guid attemptId,
             CancellationToken cancellationToken)
         {
@@ -93,6 +106,12 @@ namespace LMS.Api.Controllers
         }
 
         [HttpPost("{attemptId:guid}/submit")]
+        [ProducesResponseType(typeof(ApiResponse<SubmitQuizAttemptResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest, Description = "ApiResponse<object> for invalid argument values; ValidationProblemDetails for automatic model binding or validation failures.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Submit(Guid quizId, Guid attemptId,
             [FromBody] SubmitQuizAttemptRequest request, CancellationToken cancellationToken)
         {
@@ -120,6 +139,11 @@ namespace LMS.Api.Controllers
         }
 
         [HttpPost("start")]
+        [ProducesResponseType(typeof(ApiResponse<StartQuizAttemptResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Read access denied returns ApiResponse<object>; role authorization failure has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Start(Guid quizId, CancellationToken cancellationToken)
         {
             if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
