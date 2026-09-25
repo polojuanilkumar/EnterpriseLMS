@@ -2,6 +2,7 @@
 using LMS.Application.Interfaces.CourseSections;
 using LMS.Application.Interfaces.Persistence;
 using LMS.Application.Features.Quizzes.Common;
+using LMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -26,13 +27,27 @@ namespace LMS.Application.Features.CourseSections.DeleteCourseSection
             _ensureQuizEditable = ensureQuizEditable;
         }
 
-        public Task HandleAsync(Guid courseId, Guid sectionId, CancellationToken cancellationToken = default)
-            => _ensureQuizEditable.ExecuteParentDeletionAsync(sectionId, true,
-                token => HandleCoreAsync(courseId, sectionId, token), cancellationToken);
+        public async Task HandleAsync(Guid courseId, Guid sectionId, Guid currentUserId,
+            bool isAdmin, CancellationToken cancellationToken = default)
+        {
+            // Check access before quiz-attempt guards can return a conflict.
+            await GetAuthorizedSectionAsync(courseId, sectionId, currentUserId, isAdmin, cancellationToken);
 
-        private async Task HandleCoreAsync(
+            await _ensureQuizEditable.ExecuteParentDeletionAsync(sectionId, true,
+                async token =>
+                {
+                    var section = await GetAuthorizedSectionAsync(
+                        courseId, sectionId, currentUserId, isAdmin, token);
+                    _sectionRepository.Remove(section);
+                    await _unitOfWork.SaveChangesAsync(token);
+                }, cancellationToken);
+        }
+
+        private async Task<CourseSection> GetAuthorizedSectionAsync(
             Guid courseId,
             Guid sectionId,
+            Guid currentUserId,
+            bool isAdmin,
             CancellationToken cancellationToken = default)
         {
             var course =
@@ -58,10 +73,13 @@ namespace LMS.Application.Features.CourseSections.DeleteCourseSection
                     "Course section not found.");
             }
 
-            _sectionRepository.Remove(section);
+            if (!isAdmin && course.InstructorId != currentUserId)
+            {
+                throw new UnauthorizedAccessException(
+                    "You are not authorized to delete sections in this course.");
+            }
 
-            await _unitOfWork.SaveChangesAsync(
-                cancellationToken);
+            return section;
         }
     }
 }

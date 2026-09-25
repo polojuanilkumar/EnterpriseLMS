@@ -27,6 +27,8 @@ namespace LMS.Application.Features.CourseSections.CreateCourseSection
         public async Task<CourseSectionResponse> HandleAsync(
             Guid courseId,
             CreateCourseSectionRequest request,
+            Guid currentUserId,
+            bool isAdmin,
             CancellationToken cancellationToken = default)
         {
             var course =
@@ -38,6 +40,12 @@ namespace LMS.Application.Features.CourseSections.CreateCourseSection
             {
                 throw new KeyNotFoundException(
                     "Course not found.");
+            }
+
+            if (!isAdmin && course.InstructorId != currentUserId)
+            {
+                throw new UnauthorizedAccessException(
+                    "You are not authorized to create sections in this course.");
             }
 
             if (string.IsNullOrWhiteSpace(request.Title))
