@@ -1,3 +1,5 @@
+using LMS.Application.Features.Quizzes.Common;
+using LMS.Application.Interfaces.QuizOptions;
 using LMS.Application.Interfaces.CourseSections;
 using LMS.Application.Interfaces.Enrollments;
 using LMS.Application.Interfaces.Lessons;
@@ -17,12 +19,13 @@ namespace LMS.Application.Features.QuizAttempts.StartQuizAttempt
         private readonly ICourseSectionRepository _sections;
         private readonly ICourseEnrollmentRepository _enrollments;
         private readonly IQuizQuestionRepository _questions;
+        private readonly IQuizOptionRepository _options;
         private readonly TimeProvider _timeProvider;
 
         public StartQuizAttemptHandler(IQuizAttemptRepository attempts, IQuizRepository quizzes,
             ILessonRepository lessons, ICourseSectionRepository sections,
             ICourseEnrollmentRepository enrollments, IQuizQuestionRepository questions,
-            TimeProvider timeProvider)
+            IQuizOptionRepository options, TimeProvider timeProvider)
         {
             _attempts = attempts;
             _quizzes = quizzes;
@@ -30,6 +33,7 @@ namespace LMS.Application.Features.QuizAttempts.StartQuizAttempt
             _sections = sections;
             _enrollments = enrollments;
             _questions = questions;
+            _options = options;
             _timeProvider = timeProvider;
         }
 
@@ -67,8 +71,18 @@ namespace LMS.Application.Features.QuizAttempts.StartQuizAttempt
                     return new StartOutcome(null, "Maximum quiz attempts reached.");
 
                 var questions = await _questions.GetByQuizIdAsync(quizId, token);
-                if (questions.Count == 0 || questions.Any(x => x.Marks <= 0) || quiz.TimeLimitInMinutes <= 0)
+                if (quiz.TimeLimitInMinutes <= 0)
                     return new StartOutcome(null, "The quiz is not configured for attempts.");
+                var error = QuizConfigurationValidation.GetQuestionsError(questions);
+                if (error is not null)
+                    return new StartOutcome(null, error);
+                foreach (var question in questions)
+                {
+                    var options = await _options.GetByQuestionIdAsync(question.Id, token);
+                    error = QuizConfigurationValidation.GetQuestionError(question, options);
+                    if (error is not null)
+                        return new StartOutcome(null, error);
+                }
 
                 var nextNumber = attempts.Count == 0 ? 1 : checked(attempts.Max(x => x.AttemptNumber) + 1);
                 var newAttempt = new QuizAttempt(quizId, userId, nextNumber, now,
