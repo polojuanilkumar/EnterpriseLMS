@@ -1,4 +1,4 @@
-﻿using LMS.Application.Features.Quizzes.Common;
+using LMS.Application.Features.Quizzes.Common;
 using LMS.Application.Interfaces.QuizOptions;
 using LMS.Application.Interfaces.QuizQuestions;
 using System;
@@ -23,7 +23,15 @@ namespace LMS.Application.Features.QuizOptions.UpdateOption
             _ensureQuizEditable = ensureQuizEditable;
         }
 
-        public async Task HandleAsync(
+        public Task HandleAsync(
+            Guid quizId,
+            Guid questionId,
+            Guid optionId,
+            UpdateOptionRequest request,
+            CancellationToken cancellationToken = default)
+            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, questionId, optionId, request, token), cancellationToken);
+
+        private async Task HandleCoreAsync(
             Guid quizId,
             Guid questionId,
             Guid optionId,

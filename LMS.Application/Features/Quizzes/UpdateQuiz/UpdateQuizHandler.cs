@@ -1,4 +1,4 @@
-﻿using LMS.Application.Features.Quizzes.Common;
+using LMS.Application.Features.Quizzes.Common;
 using LMS.Application.Interfaces.Quizzes;
 using System;
 using System.Collections.Generic;
@@ -18,7 +18,13 @@ namespace LMS.Application.Features.Quizzes.UpdateQuiz
             _ensureQuizEditable = ensureQuizEditable;
         }
 
-        public async Task<QuizResponse> HandleAsync(
+        public Task<QuizResponse> HandleAsync(
+            Guid lessonId,
+            UpdateQuizRequest request,
+            CancellationToken cancellationToken = default)
+            => _ensureQuizEditable.ExecuteForLessonAsync(lessonId, token => HandleCoreAsync(lessonId, request, token), cancellationToken);
+
+        private async Task<QuizResponse> HandleCoreAsync(
             Guid lessonId,
             UpdateQuizRequest request,
             CancellationToken cancellationToken = default)
@@ -33,7 +39,10 @@ namespace LMS.Application.Features.Quizzes.UpdateQuiz
                     "Quiz not found.");
             }
 
-            await _ensureQuizEditable.CheckAsync(quiz.Id, cancellationToken);
+            await _ensureQuizEditable.CheckAsync(quiz.Id, cancellationToken, allowExistingAttempts: true);
+            if (request.PassingPercentage != quiz.PassingPercentage
+                || request.TimeLimitInMinutes != quiz.TimeLimitInMinutes)
+                await _ensureQuizEditable.CheckNoAttemptsAsync(quiz.Id, cancellationToken);
 
             if (request.PassingPercentage < 0 ||
                 request.PassingPercentage > 100)

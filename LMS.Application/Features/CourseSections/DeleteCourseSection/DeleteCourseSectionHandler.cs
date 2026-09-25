@@ -1,6 +1,7 @@
 ﻿using LMS.Application.Interfaces.Courses;
 using LMS.Application.Interfaces.CourseSections;
 using LMS.Application.Interfaces.Persistence;
+using LMS.Application.Features.Quizzes.Common;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,18 +13,24 @@ namespace LMS.Application.Features.CourseSections.DeleteCourseSection
         private readonly ICourseSectionRepository _sectionRepository;
         private readonly ICourseRepository _courseRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly EnsureQuizEditable _ensureQuizEditable;
 
         public DeleteCourseSectionHandler(
             ICourseSectionRepository sectionRepository,
             ICourseRepository courseRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork, EnsureQuizEditable ensureQuizEditable)
         {
             _sectionRepository = sectionRepository;
             _courseRepository = courseRepository;
             _unitOfWork = unitOfWork;
+            _ensureQuizEditable = ensureQuizEditable;
         }
 
-        public async Task HandleAsync(
+        public Task HandleAsync(Guid courseId, Guid sectionId, CancellationToken cancellationToken = default)
+            => _ensureQuizEditable.ExecuteParentDeletionAsync(sectionId, true,
+                token => HandleCoreAsync(courseId, sectionId, token), cancellationToken);
+
+        private async Task HandleCoreAsync(
             Guid courseId,
             Guid sectionId,
             CancellationToken cancellationToken = default)

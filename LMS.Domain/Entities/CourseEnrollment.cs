@@ -49,6 +49,18 @@ namespace LMS.Domain.Entities
             Status = EnrollmentStatus.Cancelled;
         }
 
+        public void Reactivate()
+        {
+            if (Status != EnrollmentStatus.Cancelled)
+            {
+                throw new InvalidOperationException(
+                    "Only cancelled enrollments can be reactivated.");
+            }
+
+            Status = EnrollmentStatus.Active;
+            CompletedAt = null;
+        }
+
         public void UpdateProgress(decimal progressPercentage)
         {
             if (progressPercentage < 0 || progressPercentage > 100)

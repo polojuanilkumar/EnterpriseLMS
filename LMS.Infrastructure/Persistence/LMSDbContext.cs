@@ -39,6 +39,12 @@ namespace LMS.Infrastructure.Persistence
         public DbSet<QuizQuestion> QuizQuestions { get; set; }
 
         public DbSet<QuizOption> QuizOptions { get; set; }
+
+        public DbSet<QuizAttempt> QuizAttempts { get; set; }
+
+        public DbSet<QuizAttemptAnswer> QuizAttemptAnswers { get; set; }
+
+        public DbSet<QuizAttemptAnswerOption> QuizAttemptAnswerOptions { get; set; }
         protected override void OnModelCreating(
             ModelBuilder modelBuilder)
         {

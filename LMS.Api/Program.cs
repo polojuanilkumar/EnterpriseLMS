@@ -84,6 +84,12 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+builder.Services.AddScoped<LMS.Application.Interfaces.QuizAttempts.IQuizAttemptRepository, QuizAttemptRepository>();
+builder.Services.AddScoped<LMS.Application.Features.QuizAttempts.StartQuizAttempt.StartQuizAttemptHandler>();
+builder.Services.AddScoped<LMS.Application.Features.QuizAttempts.SubmitQuizAttempt.SubmitQuizAttemptHandler>();
+builder.Services.AddScoped<LMS.Application.Features.QuizAttempts.GetQuizAttemptResult.GetQuizAttemptResultHandler>();
+
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 //builder.Services.AddOpenApi();

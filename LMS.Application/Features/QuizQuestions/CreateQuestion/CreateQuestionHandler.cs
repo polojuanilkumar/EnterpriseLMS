@@ -1,4 +1,4 @@
-﻿using LMS.Application.Features.Quizzes.Common;
+using LMS.Application.Features.Quizzes.Common;
 using LMS.Application.Interfaces.QuizQuestions;
 using LMS.Application.Interfaces.Quizzes;
 using LMS.Domain.Entities;
@@ -24,7 +24,13 @@ namespace LMS.Application.Features.QuizQuestions.CreateQuestion
             _ensureQuizEditable = ensureQuizEditable;
         }
 
-        public async Task<Guid> HandleAsync(
+        public Task<Guid> HandleAsync(
+            Guid quizId,
+            CreateQuestionRequest request,
+            CancellationToken cancellationToken = default)
+            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, request, token), cancellationToken);
+
+        private async Task<Guid> HandleCoreAsync(
             Guid quizId,
             CreateQuestionRequest request,
             CancellationToken cancellationToken = default)

@@ -71,6 +71,16 @@ namespace LMS.Application.Features.Enrollments.EnrollCourse
 
             if (existingEnrollment is not null)
             {
+                if (existingEnrollment.Status == EnrollmentStatus.Cancelled)
+                {
+                    existingEnrollment.Reactivate();
+
+                    await _enrollmentRepository.SaveChangesAsync(
+                        cancellationToken);
+
+                    return existingEnrollment.Id;
+                }
+
                 throw new InvalidOperationException(
                     "Student is already enrolled in this course.");
             }

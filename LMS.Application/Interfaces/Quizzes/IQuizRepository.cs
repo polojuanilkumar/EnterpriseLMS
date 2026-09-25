@@ -7,6 +7,8 @@ namespace LMS.Application.Interfaces.Quizzes
 {
     public interface IQuizRepository
     {
+        Task<Guid?> GetIdByLessonIdAsync(Guid lessonId, CancellationToken cancellationToken = default);
+
         Task AddAsync(
             Quiz quiz,
             CancellationToken cancellationToken = default);
