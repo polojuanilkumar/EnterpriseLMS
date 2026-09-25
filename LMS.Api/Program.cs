@@ -89,6 +89,7 @@ builder.Services.AddScoped<LMS.Application.Interfaces.QuizAttempts.IQuizAttemptR
 builder.Services.AddScoped<LMS.Application.Features.QuizAttempts.StartQuizAttempt.StartQuizAttemptHandler>();
 builder.Services.AddScoped<LMS.Application.Features.QuizAttempts.SubmitQuizAttempt.SubmitQuizAttemptHandler>();
 builder.Services.AddScoped<LMS.Application.Features.QuizAttempts.GetQuizAttemptResult.GetQuizAttemptResultHandler>();
+builder.Services.AddScoped<LMS.Application.Features.QuizAttempts.GetQuizAttempts.GetQuizAttemptsHandler>();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

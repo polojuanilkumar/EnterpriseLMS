@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using LMS.Application.Common.Models;
 using LMS.Application.Features.QuizAttempts.GetQuizAttemptResult;
+using LMS.Application.Features.QuizAttempts.GetQuizAttempts;
 using LMS.Application.Features.QuizAttempts.StartQuizAttempt;
 using LMS.Application.Features.QuizAttempts.SubmitQuizAttempt;
 using Microsoft.AspNetCore.Authorization;
@@ -16,13 +17,27 @@ namespace LMS.Api.Controllers
         private readonly StartQuizAttemptHandler _startHandler;
         private readonly SubmitQuizAttemptHandler _submitHandler;
         private readonly GetQuizAttemptResultHandler _resultHandler;
+        private readonly GetQuizAttemptsHandler _attemptsHandler;
 
         public QuizAttemptsController(StartQuizAttemptHandler startHandler, SubmitQuizAttemptHandler submitHandler,
-            GetQuizAttemptResultHandler resultHandler)
+            GetQuizAttemptResultHandler resultHandler, GetQuizAttemptsHandler attemptsHandler)
         {
             _startHandler = startHandler;
             _submitHandler = submitHandler;
             _resultHandler = resultHandler;
+            _attemptsHandler = attemptsHandler;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAttempts(Guid quizId, CancellationToken cancellationToken)
+        {
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
+
+            var result = await _attemptsHandler.HandleAsync(quizId, userId, cancellationToken);
+            return Ok(ApiResponse<IReadOnlyList<GetQuizAttemptsResponse>>.Ok(result,
+                "Quiz attempts retrieved successfully."));
         }
 
         [HttpGet("{attemptId:guid}/result")]
