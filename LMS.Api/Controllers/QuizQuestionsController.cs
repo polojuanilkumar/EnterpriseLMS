@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using LMS.Application.Common.Models;
 ﻿using LMS.Application.Features.QuizOptions.CreateOption;
 using LMS.Application.Features.QuizOptions.DeleteOption;
 using LMS.Application.Features.QuizOptions.GetOptions;
@@ -93,19 +95,35 @@ namespace LMS.Api.Controllers
                 User.IsInRole("Admin") ||
                 User.IsInRole("SuperAdmin");
 
-            var questions = await _getQuestionsHandler.HandleAsync(
-                quizId,
-                canViewUnpublished,
-                cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(
-                new
-                {
-                    success = true,
-                    message = "Questions retrieved successfully.",
-                    data = questions,
-                    errors = (object?)null
-                });
+            try
+            {
+                var questions = await _getQuestionsHandler.HandleAsync(
+                    quizId,
+                    userId,
+                    canViewUnpublished,
+                    cancellationToken);
+
+                return Ok(
+                    new
+                    {
+                        success = true,
+                        message = "Questions retrieved successfully.",
+                        data = questions,
+                        errors = (object?)null
+                    });
+            }
+            catch (KeyNotFoundException exception)
+            {
+                return NotFound(ApiResponse<object>.Fail(exception.Message));
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 
@@ -123,31 +141,47 @@ namespace LMS.Api.Controllers
                 User.IsInRole("Admin") ||
                 User.IsInRole("SuperAdmin");
 
-            var question = await _getQuestionByIdHandler.HandleAsync(
-                questionId,
-                canViewUnpublished,
-                cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            if (question.QuizId != quizId)
+            try
             {
-                return NotFound(
+                var question = await _getQuestionByIdHandler.HandleAsync(
+                    questionId,
+                    userId,
+                    canViewUnpublished,
+                    cancellationToken);
+
+                if (question.QuizId != quizId)
+                {
+                    return NotFound(
+                        new
+                        {
+                            success = false,
+                            message = "Question not found.",
+                            data = (object?)null,
+                            errors = (object?)null
+                        });
+                }
+
+                return Ok(
                     new
                     {
-                        success = false,
-                        message = "Question not found.",
-                        data = (object?)null,
+                        success = true,
+                        message = "Question retrieved successfully.",
+                        data = question,
                         errors = (object?)null
                     });
             }
-
-            return Ok(
-                new
-                {
-                    success = true,
-                    message = "Question retrieved successfully.",
-                    data = question,
-                    errors = (object?)null
-                });
+            catch (KeyNotFoundException exception)
+            {
+                return NotFound(ApiResponse<object>.Fail(exception.Message));
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 
@@ -257,18 +291,34 @@ namespace LMS.Api.Controllers
             Guid questionId,
             CancellationToken cancellationToken)
         {
-            var options = await _getStudentOptionsHandler.HandleAsync(
-                quizId,
-                questionId,
-                cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Options retrieved successfully.",
-                data = options,
-                errors = (object?)null
-            });
+                var options = await _getStudentOptionsHandler.HandleAsync(
+                    quizId,
+                    questionId,
+                    userId,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Options retrieved successfully.",
+                    data = options,
+                    errors = (object?)null
+                });
+            }
+            catch (KeyNotFoundException exception)
+            {
+                return NotFound(ApiResponse<object>.Fail(exception.Message));
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 

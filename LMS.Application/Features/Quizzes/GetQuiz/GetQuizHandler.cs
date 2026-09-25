@@ -9,15 +9,18 @@ namespace LMS.Application.Features.Quizzes.GetQuiz
     public sealed class GetQuizHandler
     {
         private readonly IQuizRepository _quizRepository;
+        private readonly EnsureQuizReadable _ensureQuizReadable;
 
         public GetQuizHandler(
-            IQuizRepository quizRepository)
+            IQuizRepository quizRepository, EnsureQuizReadable ensureQuizReadable)
         {
             _quizRepository = quizRepository;
+            _ensureQuizReadable = ensureQuizReadable;
         }
 
         public async Task<QuizResponse> HandleAsync(
             Guid lessonId,
+            Guid userId,
             bool canViewUnpublished,
             CancellationToken cancellationToken = default)
         {
@@ -25,18 +28,11 @@ namespace LMS.Application.Features.Quizzes.GetQuiz
                 lessonId,
                 cancellationToken);
 
-            if (quiz is null)
-            {
-                throw new KeyNotFoundException(
-                    "Quiz not found.");
-            }
-            if (!quiz.IsPublished && !canViewUnpublished)
-            {
-                throw new KeyNotFoundException("Quiz not found.");
-            }
+            await _ensureQuizReadable.CheckAsync(quiz, userId, canViewUnpublished, cancellationToken);
+
             return new QuizResponse
             {
-                Id = quiz.Id,
+                Id = quiz!.Id,
                 LessonId = quiz.LessonId,
                 Title = quiz.Title,
                 Description = quiz.Description,

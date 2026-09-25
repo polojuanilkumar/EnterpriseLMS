@@ -1,3 +1,4 @@
+using LMS.Application.Features.Quizzes.Common;
 ﻿using LMS.Application.Features.QuizQuestions.Common;
 using LMS.Application.Interfaces.QuizQuestions;
 using LMS.Application.Interfaces.Quizzes;
@@ -11,23 +12,26 @@ namespace LMS.Application.Features.QuizQuestions.GetQuestions
     {
         private readonly IQuizQuestionRepository _questionRepository;
         private readonly IQuizRepository _quizRepository;
+        private readonly EnsureQuizReadable _ensureQuizReadable;
         public GetQuestionsHandler(
-            IQuizQuestionRepository questionRepository, IQuizRepository quizRepository)
+            IQuizQuestionRepository questionRepository, IQuizRepository quizRepository, EnsureQuizReadable ensureQuizReadable)
         {
             _questionRepository = questionRepository;
             _quizRepository = quizRepository;
+            _ensureQuizReadable = ensureQuizReadable;
         }
 
         public async Task<IReadOnlyList<QuizQuestionResponse>> HandleAsync(
             Guid quizId,
+            Guid userId,
             bool canViewUnpublished,
             CancellationToken cancellationToken = default)
         {
             var quiz = await _quizRepository.GetByIdAsync(
     quizId, cancellationToken);
 
-            if (quiz is null || (!quiz.IsPublished && !canViewUnpublished))
-                throw new KeyNotFoundException("Quiz not found.");
+            await _ensureQuizReadable.CheckAsync(quiz, userId, canViewUnpublished,
+                cancellationToken, "Quiz not found.");
 
 
             var questions =
