@@ -352,129 +352,165 @@ namespace LMS.Api.Controllers
 
         [Authorize(Roles = "Student")]
         [HttpPost("/api/Lessons/{id:guid}/start")]
+        [ProducesResponseType(typeof(ApiResponse<LMS.Application.Features.LessonProgress.Common.LessonProgressResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Start(
     Guid id,
     CancellationToken cancellationToken)
         {
-            var email = User.FindFirst(
-    System.Security.Claims.ClaimTypes.Email)?.Value;
-
-            if (string.IsNullOrWhiteSpace(email))
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
             {
                 return Unauthorized(new
                 {
                     success = false,
-                    message = "Authenticated user email was not found."
+                    message = "Authenticated user ID was not found."
                 });
             }
 
-            var result = await _startLessonHandler.HandleAsync(
-                id,
-                email,
-                cancellationToken);
-
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Lesson started successfully.",
-                data = result
-            });
+                var result = await _startLessonHandler.HandleAsync(
+                    id,
+                    userId,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Lesson started successfully.",
+                    data = result
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
         [Authorize(Roles = "Student")]
         [HttpPatch("/api/Lessons/{id:guid}/progress")]
+        [ProducesResponseType(typeof(ApiResponse<LMS.Application.Features.LessonProgress.Common.LessonProgressResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateProgress(
     Guid id,
     [FromBody] UpdateLessonProgressRequest request,
     CancellationToken cancellationToken)
         {
-            var email = User.FindFirst(
-                System.Security.Claims.ClaimTypes.Email)?.Value;
-
-            if (string.IsNullOrWhiteSpace(email))
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
             {
                 return Unauthorized(new
                 {
                     success = false,
-                    message = "Authenticated user email was not found."
+                    message = "Authenticated user ID was not found."
                 });
             }
 
-            var result = await _updateLessonProgressHandler.HandleAsync(
-                id,
-                request,
-                email,
-                cancellationToken);
-
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Lesson progress updated successfully.",
-                data = result
-            });
+                var result = await _updateLessonProgressHandler.HandleAsync(
+                    id,
+                    request,
+                    userId,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Lesson progress updated successfully.",
+                    data = result
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 
         [Authorize(Roles = "Student")]
         [HttpPatch("/api/Lessons/{id:guid}/complete")]
+        [ProducesResponseType(typeof(ApiResponse<LMS.Application.Features.LessonProgress.Common.LessonProgressResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Complete(
     Guid id,
     CancellationToken cancellationToken)
         {
-            var email = User.FindFirst(
-                System.Security.Claims.ClaimTypes.Email)?.Value;
-
-            if (string.IsNullOrWhiteSpace(email))
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
             {
                 return Unauthorized(new
                 {
                     success = false,
-                    message = "Authenticated user email was not found."
+                    message = "Authenticated user ID was not found."
                 });
             }
 
-            var result = await _completeLessonHandler.HandleAsync(
-                id,
-                email,
-                cancellationToken);
-
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Lesson completed successfully.",
-                data = result
-            });
+                var result = await _completeLessonHandler.HandleAsync(
+                    id,
+                    userId,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Lesson completed successfully.",
+                    data = result
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
         [Authorize(Roles = "Student")]
         [HttpGet("/api/Lessons/{id:guid}/progress")]
+        [ProducesResponseType(typeof(ApiResponse<LMS.Application.Features.LessonProgress.Common.LessonProgressResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetProgress(
     Guid id,
     CancellationToken cancellationToken)
         {
-            var email = User.FindFirst(
-                System.Security.Claims.ClaimTypes.Email)?.Value;
-
-            if (string.IsNullOrWhiteSpace(email))
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
             {
                 return Unauthorized(new
                 {
                     success = false,
-                    message = "Authenticated user email was not found."
+                    message = "Authenticated user ID was not found."
                 });
             }
 
-            var result = await _getLessonProgressHandler.HandleAsync(
-                id,
-                email,
-                cancellationToken);
-
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Lesson progress retrieved successfully.",
-                data = result
-            });
+                var result = await _getLessonProgressHandler.HandleAsync(
+                    id,
+                    userId,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Lesson progress retrieved successfully.",
+                    data = result
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 

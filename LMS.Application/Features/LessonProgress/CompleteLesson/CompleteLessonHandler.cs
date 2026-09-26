@@ -1,5 +1,5 @@
 ﻿using LMS.Application.Features.LessonProgress.Common;
-using LMS.Application.Interfaces.Identity;
+using LMS.Application.Features.Lessons.Common;
 using LMS.Application.Interfaces.LessonProgresses;
 using LMS.Application.Interfaces.Lessons;
 using LessonProgressEntity = LMS.Domain.Entities.LessonProgress;
@@ -13,21 +13,21 @@ namespace LMS.Application.Features.LessonProgress.CompleteLesson
     {
         private readonly ILessonRepository _lessonRepository;
         private readonly ILessonProgressRepository _lessonProgressRepository;
-        private readonly IIdentityService _identityService;
+        private readonly EnsureLessonReadable _readable;
 
         public CompleteLessonHandler(
             ILessonRepository lessonRepository,
             ILessonProgressRepository lessonProgressRepository,
-            IIdentityService identityService)
+            EnsureLessonReadable readable)
         {
             _lessonRepository = lessonRepository;
             _lessonProgressRepository = lessonProgressRepository;
-            _identityService = identityService;
+            _readable = readable;
         }
 
         public async Task<LessonProgressResponse> HandleAsync(
             Guid lessonId,
-            string email,
+            Guid userId,
             CancellationToken cancellationToken = default)
         {
             var lesson = await _lessonRepository.GetByIdAsync(
@@ -39,17 +39,11 @@ namespace LMS.Application.Features.LessonProgress.CompleteLesson
                 throw new KeyNotFoundException("Lesson not found.");
             }
 
-            var userId = await _identityService.GetUserIdAsync(email);
-
-            if (!userId.HasValue)
-            {
-                throw new UnauthorizedAccessException(
-                    "Authenticated user not found.");
-            }
+            await _readable.CheckAsync(lesson, userId, canViewUnpublished: false, cancellationToken);
 
             var progress =
                 await _lessonProgressRepository.GetByUserAndLessonAsync(
-                    userId.Value,
+                    userId,
                     lessonId,
                     cancellationToken);
 
@@ -58,6 +52,11 @@ namespace LMS.Application.Features.LessonProgress.CompleteLesson
                 throw new KeyNotFoundException(
                     "Lesson progress not found. Start the lesson first.");
             }
+
+            if (progress.UserId != userId)
+                throw new UnauthorizedAccessException("You are not authorized to access this lesson progress.");
+            if (progress.LessonId != lesson.Id)
+                throw new KeyNotFoundException("Lesson progress not found.");
 
             progress.Complete();
 
