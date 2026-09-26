@@ -280,6 +280,7 @@ builder.Services.AddScoped<DeleteCourseSectionHandler>();
 builder.Services.AddScoped<ILessonRepository, LessonRepository>();
 builder.Services.AddScoped<LMS.Application.Features.Lessons.Common.EnsureLessonOwnership>();
 builder.Services.AddScoped<CreateLessonHandler>();
+builder.Services.AddScoped<LMS.Application.Features.Lessons.Common.EnsureLessonReadable>();
 builder.Services.AddScoped<GetLessonsHandler>();
 builder.Services.AddScoped<GetLessonByIdHandler>();
 builder.Services.AddScoped<UpdateLessonHandler>();

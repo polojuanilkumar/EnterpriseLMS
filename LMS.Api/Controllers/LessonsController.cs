@@ -134,39 +134,79 @@ namespace LMS.Api.Controllers
         }
 
         [HttpGet("/api/Sections/{sectionId:guid}/lessons")]
+        [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<LessonResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid learner user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetBySection(
             Guid sectionId,
             CancellationToken cancellationToken)
         {
-            var result =
-                await _getLessonsHandler.HandleAsync(
-                    sectionId,
-                    cancellationToken);
+            var canViewUnpublished = User.IsInRole("Instructor")
+                || User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+            var hasUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                && userId != Guid.Empty;
+            if (!canViewUnpublished && !hasUserId)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Lessons retrieved successfully.",
-                data = result
-            });
+                var result =
+                    await _getLessonsHandler.HandleAsync(
+                        sectionId,
+                        userId,
+                        canViewUnpublished,
+                        cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Lessons retrieved successfully.",
+                    data = result
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
         [HttpGet("/api/Lessons/{id:guid}")]
+        [ProducesResponseType(typeof(ApiResponse<LessonResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid learner user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(
             Guid id,
             CancellationToken cancellationToken)
         {
-            var result =
-                await _getLessonByIdHandler.HandleAsync(
-                    id,
-                    cancellationToken);
+            var canViewUnpublished = User.IsInRole("Instructor")
+                || User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+            var hasUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                && userId != Guid.Empty;
+            if (!canViewUnpublished && !hasUserId)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Lesson retrieved successfully.",
-                data = result
-            });
+                var result =
+                    await _getLessonByIdHandler.HandleAsync(
+                        id,
+                        userId,
+                        canViewUnpublished,
+                        cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Lesson retrieved successfully.",
+                    data = result
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]

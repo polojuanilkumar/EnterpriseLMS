@@ -9,19 +9,24 @@ namespace LMS.Application.Features.Lessons.GetLessons
 {
     public sealed class GetLessonsHandler
     {
+        private readonly EnsureLessonReadable _readable;
         private readonly ILessonRepository _lessonRepository;
         private readonly ICourseSectionRepository _sectionRepository;
 
         public GetLessonsHandler(
             ILessonRepository lessonRepository,
-            ICourseSectionRepository sectionRepository)
+            ICourseSectionRepository sectionRepository,
+            EnsureLessonReadable readable)
         {
+            _readable = readable;
             _lessonRepository = lessonRepository;
             _sectionRepository = sectionRepository;
         }
 
         public async Task<IReadOnlyList<LessonResponse>> HandleAsync(
             Guid sectionId,
+            Guid userId,
+            bool canViewUnpublished,
             CancellationToken cancellationToken = default)
         {
             var section =
@@ -35,12 +40,15 @@ namespace LMS.Application.Features.Lessons.GetLessons
                     "Course section not found.");
             }
 
+            await _readable.CheckCourseAsync(section.CourseId, userId, canViewUnpublished, cancellationToken);
+
             var lessons =
                 await _lessonRepository.GetBySectionIdAsync(
                     sectionId,
                     cancellationToken);
 
             return lessons
+                .Where(x => canViewUnpublished || x.IsPublished)
                 .Select(x => new LessonResponse
                 {
                     Id = x.Id,
