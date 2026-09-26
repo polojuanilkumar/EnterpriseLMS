@@ -61,8 +61,8 @@ namespace LMS.Api.Controllers
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [ProducesResponseType(typeof(ApiResponse<Dictionary<string, Guid>>), StatusCodes.Status201Created, Description = "Success envelope with data containing the questionId GUID.")]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest, Description = "ApiResponse<object> for invalid argument values; ValidationProblemDetails for automatic model binding or validation failures.")]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
-        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Ownership denied returns ApiResponse<object>; role authorization failure has no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateQuestion(
@@ -70,24 +70,40 @@ namespace LMS.Api.Controllers
             [FromBody] CreateQuestionRequest request,
             CancellationToken cancellationToken)
         {
-            var questionId =
-                await _createQuestionHandler.HandleAsync(
-                    quizId,
-                    request,
-                    cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return StatusCode(
-                StatusCodes.Status201Created,
-                new
-                {
-                    success = true,
-                    message = "Question created successfully.",
-                    data = new
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                var questionId =
+                    await _createQuestionHandler.HandleAsync(
+                        quizId,
+                        request,
+                        currentUserId,
+                        isAdmin,
+                        User.IsInRole("Instructor"),
+                        cancellationToken);
+
+                return StatusCode(
+                    StatusCodes.Status201Created,
+                    new
                     {
-                        questionId
-                    },
-                    errors = (object?)null
-                });
+                        success = true,
+                        message = "Question created successfully.",
+                        data = new
+                        {
+                            questionId
+                        },
+                        errors = (object?)null
+                    });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 
@@ -207,8 +223,8 @@ namespace LMS.Api.Controllers
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest, Description = "ApiResponse<object> for invalid argument values; ValidationProblemDetails for automatic model binding or validation failures.")]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
-        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Ownership denied returns ApiResponse<object>; role authorization failure has no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateQuestion(
@@ -217,28 +233,44 @@ namespace LMS.Api.Controllers
     [FromBody] UpdateQuestionRequest request,
     CancellationToken cancellationToken)
         {
-            await _updateQuestionHandler.HandleAsync(
-                quizId,
-                questionId,
-                request,
-                cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(
-                new
-                {
-                    success = true,
-                    message = "Question updated successfully.",
-                    data = (object?)null,
-                    errors = (object?)null
-                });
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                await _updateQuestionHandler.HandleAsync(
+                    quizId,
+                    questionId,
+                    request,
+                    currentUserId,
+                    isAdmin,
+                    User.IsInRole("Instructor"),
+                    cancellationToken);
+
+                return Ok(
+                    new
+                    {
+                        success = true,
+                        message = "Question updated successfully.",
+                        data = (object?)null,
+                        errors = (object?)null
+                    });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 
         [HttpDelete("{questionId:guid}")]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
-        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Ownership denied returns ApiResponse<object>; role authorization failure has no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteQuestion(
@@ -246,19 +278,35 @@ namespace LMS.Api.Controllers
     Guid questionId,
     CancellationToken cancellationToken)
         {
-            await _deleteQuestionHandler.HandleAsync(
-                quizId,
-                questionId,
-                cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(
-                new
-                {
-                    success = true,
-                    message = "Question deleted successfully.",
-                    data = (object?)null,
-                    errors = (object?)null
-                });
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                await _deleteQuestionHandler.HandleAsync(
+                    quizId,
+                    questionId,
+                    currentUserId,
+                    isAdmin,
+                    User.IsInRole("Instructor"),
+                    cancellationToken);
+
+                return Ok(
+                    new
+                    {
+                        success = true,
+                        message = "Question deleted successfully.",
+                        data = (object?)null,
+                        errors = (object?)null
+                    });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 
@@ -266,8 +314,8 @@ namespace LMS.Api.Controllers
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [ProducesResponseType(typeof(ApiResponse<Dictionary<string, Guid>>), StatusCodes.Status201Created, Description = "Success envelope with data containing the optionId GUID.")]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest, Description = "ApiResponse<object> for invalid argument values; ValidationProblemDetails for automatic model binding or validation failures.")]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
-        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Ownership denied returns ApiResponse<object>; role authorization failure has no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateOption(
@@ -276,21 +324,37 @@ namespace LMS.Api.Controllers
     [FromBody] CreateOptionRequest request,
     CancellationToken cancellationToken)
         {
-            var optionId = await _createOptionHandler.HandleAsync(
-                quizId,
-                questionId,
-                request,
-                cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return StatusCode(
-                StatusCodes.Status201Created,
-                new
-                {
-                    success = true,
-                    message = "Option created successfully.",
-                    data = new { optionId },
-                    errors = (object?)null
-                });
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                var optionId = await _createOptionHandler.HandleAsync(
+                    quizId,
+                    questionId,
+                    request,
+                    currentUserId,
+                    isAdmin,
+                    User.IsInRole("Instructor"),
+                    cancellationToken);
+
+                return StatusCode(
+                    StatusCodes.Status201Created,
+                    new
+                    {
+                        success = true,
+                        message = "Option created successfully.",
+                        data = new { optionId },
+                        errors = (object?)null
+                    });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 
@@ -366,8 +430,8 @@ namespace LMS.Api.Controllers
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest, Description = "ApiResponse<object> for invalid argument values; ValidationProblemDetails for automatic model binding or validation failures.")]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
-        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Ownership denied returns ApiResponse<object>; role authorization failure has no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateOption(
@@ -377,28 +441,44 @@ namespace LMS.Api.Controllers
     [FromBody] UpdateOptionRequest request,
     CancellationToken cancellationToken)
         {
-            await _updateOptionHandler.HandleAsync(
-                quizId,
-                questionId,
-                optionId,
-                request,
-                cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(new
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
             {
-                success = true,
-                message = "Option updated successfully.",
-                data = (object?)null,
-                errors = (object?)null
-            });
+                await _updateOptionHandler.HandleAsync(
+                    quizId,
+                    questionId,
+                    optionId,
+                    request,
+                    currentUserId,
+                    isAdmin,
+                    User.IsInRole("Instructor"),
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Option updated successfully.",
+                    data = (object?)null,
+                    errors = (object?)null
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 
         [HttpDelete("{questionId:guid}/options/{optionId:guid}")]
         [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized, Description = "JWT authentication challenge; no response body.")]
-        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Ownership denied returns ApiResponse<object>; role authorization failure has no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteOption(
@@ -407,19 +487,35 @@ namespace LMS.Api.Controllers
     Guid optionId,
     CancellationToken cancellationToken)
         {
-            await _deleteOptionHandler.HandleAsync(
-                quizId,
-                questionId,
-                optionId,
-                cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(new
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
             {
-                success = true,
-                message = "Option deleted successfully.",
-                data = (object?)null,
-                errors = (object?)null
-            });
+                await _deleteOptionHandler.HandleAsync(
+                    quizId,
+                    questionId,
+                    optionId,
+                    currentUserId,
+                    isAdmin,
+                    User.IsInRole("Instructor"),
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Option deleted successfully.",
+                    data = (object?)null,
+                    errors = (object?)null
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 

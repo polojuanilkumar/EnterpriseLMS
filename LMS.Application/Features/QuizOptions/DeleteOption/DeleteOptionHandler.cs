@@ -9,6 +9,7 @@ namespace LMS.Application.Features.QuizOptions.DeleteOption
 {
     public sealed class DeleteOptionHandler
     {
+        private readonly EnsureQuizOwnership _ownership;
         private readonly IQuizOptionRepository _optionRepository;
         private readonly IQuizQuestionRepository _questionRepository;
 
@@ -17,8 +18,10 @@ namespace LMS.Application.Features.QuizOptions.DeleteOption
         public DeleteOptionHandler(
             IQuizOptionRepository optionRepository,
             IQuizQuestionRepository questionRepository,
-            EnsureQuizEditable ensureQuizEditable)
+            EnsureQuizEditable ensureQuizEditable,
+            EnsureQuizOwnership ownership)
         {
+            _ownership = ownership;
             _optionRepository = optionRepository;
             _questionRepository = questionRepository;
             _ensureQuizEditable = ensureQuizEditable;
@@ -28,13 +31,19 @@ namespace LMS.Application.Features.QuizOptions.DeleteOption
             Guid quizId,
             Guid questionId,
             Guid optionId,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
-            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, questionId, optionId, token), cancellationToken);
+            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, questionId, optionId, currentUserId, isAdmin, isInstructor, token), cancellationToken);
 
         private async Task HandleCoreAsync(
             Guid quizId,
             Guid questionId,
             Guid optionId,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
         {
             var question = await _questionRepository.GetByIdAsync(
@@ -50,6 +59,8 @@ namespace LMS.Application.Features.QuizOptions.DeleteOption
 
             if (option is null || option.QuestionId != questionId)
                 throw new KeyNotFoundException("Option not found.");
+
+            await _ownership.CheckQuizAsync(question.QuizId, currentUserId, isAdmin, isInstructor, cancellationToken);
 
             await _ensureQuizEditable.CheckAsync(quizId, cancellationToken);
 

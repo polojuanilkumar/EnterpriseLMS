@@ -9,6 +9,7 @@ namespace LMS.Application.Features.QuizOptions.UpdateOption
 {
     public sealed class UpdateOptionHandler
     {
+        private readonly EnsureQuizOwnership _ownership;
         private readonly IQuizOptionRepository _optionRepository;
         private readonly IQuizQuestionRepository _questionRepository;
 
@@ -16,8 +17,10 @@ namespace LMS.Application.Features.QuizOptions.UpdateOption
 
         public UpdateOptionHandler(
             IQuizOptionRepository optionRepository,
-            IQuizQuestionRepository questionRepository, EnsureQuizEditable ensureQuizEditable)
+            IQuizQuestionRepository questionRepository, EnsureQuizEditable ensureQuizEditable,
+            EnsureQuizOwnership ownership)
         {
+            _ownership = ownership;
             _optionRepository = optionRepository;
             _questionRepository = questionRepository;
             _ensureQuizEditable = ensureQuizEditable;
@@ -28,14 +31,20 @@ namespace LMS.Application.Features.QuizOptions.UpdateOption
             Guid questionId,
             Guid optionId,
             UpdateOptionRequest request,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
-            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, questionId, optionId, request, token), cancellationToken);
+            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, questionId, optionId, request, currentUserId, isAdmin, isInstructor, token), cancellationToken);
 
         private async Task HandleCoreAsync(
             Guid quizId,
             Guid questionId,
             Guid optionId,
             UpdateOptionRequest request,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
         {
             var question = await _questionRepository.GetByIdAsync(
@@ -49,6 +58,8 @@ namespace LMS.Application.Features.QuizOptions.UpdateOption
 
             if (option is null || option.QuestionId != questionId)
                 throw new KeyNotFoundException("Option not found.");
+
+            await _ownership.CheckQuizAsync(question.QuizId, currentUserId, isAdmin, isInstructor, cancellationToken);
 
             if (string.IsNullOrWhiteSpace(request.OptionText))
                 throw new ArgumentException("Option text is required.");
