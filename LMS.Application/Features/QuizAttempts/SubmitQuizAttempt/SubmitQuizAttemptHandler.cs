@@ -53,7 +53,7 @@ namespace LMS.Application.Features.QuizAttempts.SubmitQuizAttempt
                     throw new KeyNotFoundException("Published quiz not found.");
 
                 // Recheck current access inside the submission transaction before scoring or saving answers.
-                await _readable.CheckAsync(quiz, userId, canViewUnpublished: false, token);
+                await _readable.CheckForMutationAsync(quiz, userId, token);
 
                 if (request is null || request.Answers is null || request.Answers.Any(x => x is null))
                     throw new ArgumentException("Answers must be a non-null list.");

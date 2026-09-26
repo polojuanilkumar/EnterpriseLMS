@@ -1,4 +1,4 @@
-﻿using LMS.Application.Features.LessonProgress.Common;
+using LMS.Application.Features.LessonProgress.Common;
 using LMS.Application.Features.Lessons.Common;
 using LMS.Application.Interfaces.LessonProgresses;
 using LMS.Application.Interfaces.Lessons;
@@ -40,7 +40,7 @@ namespace LMS.Application.Features.LessonProgress.UpdateProgress
                 throw new KeyNotFoundException("Lesson not found.");
             }
 
-            await _readable.CheckAsync(lesson, userId, canViewUnpublished: false, cancellationToken);
+            await _readable.CheckForMutationAsync(lesson, userId, cancellationToken);
 
             var progress =
                 await _lessonProgressRepository.GetByUserAndLessonAsync(

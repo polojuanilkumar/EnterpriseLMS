@@ -20,8 +20,17 @@ namespace LMS.Application.Features.Lessons.Common
             _enrollments = enrollments;
         }
 
-        public async Task CheckAsync(Lesson lesson, Guid userId, bool canViewUnpublished,
+        public Task CheckAsync(Lesson lesson, Guid userId, bool canViewUnpublished,
             CancellationToken cancellationToken = default)
+            => CheckLessonCoreAsync(lesson, userId, canViewUnpublished, allowCompleted: true, cancellationToken);
+
+        // Learner mutations never inherit staff bypass or completed-enrollment read access.
+        public Task CheckForMutationAsync(Lesson lesson, Guid userId,
+            CancellationToken cancellationToken = default)
+            => CheckLessonCoreAsync(lesson, userId, canViewUnpublished: false, allowCompleted: false, cancellationToken);
+
+        private async Task CheckLessonCoreAsync(Lesson lesson, Guid userId, bool canViewUnpublished,
+            bool allowCompleted, CancellationToken cancellationToken)
         {
             if (canViewUnpublished)
                 return;
@@ -31,11 +40,15 @@ namespace LMS.Application.Features.Lessons.Common
 
             var section = await _sections.GetByIdAsync(lesson.SectionId, cancellationToken)
                 ?? throw new KeyNotFoundException("Course section not found.");
-            await CheckCourseAsync(section.CourseId, userId, canViewUnpublished, cancellationToken);
+            await CheckCourseCoreAsync(section.CourseId, userId, canViewUnpublished, allowCompleted, cancellationToken);
         }
 
-        public async Task CheckCourseAsync(Guid courseId, Guid userId, bool canViewUnpublished,
+        public Task CheckCourseAsync(Guid courseId, Guid userId, bool canViewUnpublished,
             CancellationToken cancellationToken = default)
+            => CheckCourseCoreAsync(courseId, userId, canViewUnpublished, allowCompleted: true, cancellationToken);
+
+        private async Task CheckCourseCoreAsync(Guid courseId, Guid userId, bool canViewUnpublished,
+            bool allowCompleted, CancellationToken cancellationToken)
         {
             if (canViewUnpublished)
                 return;
@@ -48,8 +61,11 @@ namespace LMS.Application.Features.Lessons.Common
                 throw new UnauthorizedAccessException("Authenticated user ID was not found.");
 
             var enrollment = await _enrollments.GetByCourseAndUserAsync(course.Id, userId, cancellationToken);
-            if (enrollment is null || enrollment.Status != EnrollmentStatus.Active)
-                throw new UnauthorizedAccessException("An active course enrollment is required.");
+            if (enrollment is null || (enrollment.Status != EnrollmentStatus.Active
+                && !(allowCompleted && enrollment.Status == EnrollmentStatus.Completed)))
+                throw new UnauthorizedAccessException(allowCompleted
+                    ? "An active or completed course enrollment is required."
+                    : "An active course enrollment is required.");
         }
     }
 }

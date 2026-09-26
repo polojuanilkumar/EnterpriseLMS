@@ -38,7 +38,7 @@ namespace LMS.Application.Features.QuizAttempts.StartQuizAttempt
                 if (quiz is null || !quiz.IsPublished)
                     throw new KeyNotFoundException("Published quiz not found.");
 
-                await _readable.CheckAsync(quiz, userId, canViewUnpublished: false, token);
+                await _readable.CheckForMutationAsync(quiz, userId, token);
 
                 var attempts = await _attempts.GetByQuizAndUserAsync(quizId, userId, token);
                 // Capture server time after acquiring the lock, not while waiting for it.
