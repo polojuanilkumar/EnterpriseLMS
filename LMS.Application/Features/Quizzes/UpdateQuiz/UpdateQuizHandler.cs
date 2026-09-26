@@ -8,12 +8,15 @@ namespace LMS.Application.Features.Quizzes.UpdateQuiz
 {
     public sealed class UpdateQuizHandler
     {
+        private readonly EnsureQuizOwnership _ownership;
         private readonly IQuizRepository _quizRepository;
         private readonly EnsureQuizEditable _ensureQuizEditable;
 
         public UpdateQuizHandler(
-            IQuizRepository quizRepository, EnsureQuizEditable ensureQuizEditable)
+            IQuizRepository quizRepository, EnsureQuizEditable ensureQuizEditable,
+            EnsureQuizOwnership ownership)
         {
+            _ownership = ownership;
             _quizRepository = quizRepository;
             _ensureQuizEditable = ensureQuizEditable;
         }
@@ -21,12 +24,18 @@ namespace LMS.Application.Features.Quizzes.UpdateQuiz
         public Task<QuizResponse> HandleAsync(
             Guid lessonId,
             UpdateQuizRequest request,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
-            => _ensureQuizEditable.ExecuteForLessonAsync(lessonId, token => HandleCoreAsync(lessonId, request, token), cancellationToken);
+            => _ensureQuizEditable.ExecuteForLessonAsync(lessonId, token => HandleCoreAsync(lessonId, request, currentUserId, isAdmin, isInstructor, token), cancellationToken);
 
         private async Task<QuizResponse> HandleCoreAsync(
             Guid lessonId,
             UpdateQuizRequest request,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
         {
             var quiz = await _quizRepository.GetByLessonIdAsync(
@@ -38,6 +47,8 @@ namespace LMS.Application.Features.Quizzes.UpdateQuiz
                 throw new KeyNotFoundException(
                     "Quiz not found.");
             }
+
+            await _ownership.CheckLessonAsync(quiz.LessonId, currentUserId, isAdmin, isInstructor, cancellationToken);
 
             await _ensureQuizEditable.CheckAsync(quiz.Id, cancellationToken, allowExistingAttempts: true);
             if (request.PassingPercentage != quiz.PassingPercentage

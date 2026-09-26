@@ -10,6 +10,7 @@ namespace LMS.Application.Features.QuizQuestions.CreateQuestion
 {
     public sealed class CreateQuestionHandler
     {
+        private readonly EnsureQuizOwnership _ownership;
         private readonly IQuizQuestionRepository _questionRepository;
         private readonly IQuizRepository _quizRepository;
 
@@ -17,8 +18,10 @@ namespace LMS.Application.Features.QuizQuestions.CreateQuestion
 
         public CreateQuestionHandler(
             IQuizQuestionRepository questionRepository,
-            IQuizRepository quizRepository, EnsureQuizEditable ensureQuizEditable)
+            IQuizRepository quizRepository, EnsureQuizEditable ensureQuizEditable,
+            EnsureQuizOwnership ownership)
         {
+            _ownership = ownership;
             _questionRepository = questionRepository;
             _quizRepository = quizRepository;
             _ensureQuizEditable = ensureQuizEditable;
@@ -27,12 +30,18 @@ namespace LMS.Application.Features.QuizQuestions.CreateQuestion
         public Task<Guid> HandleAsync(
             Guid quizId,
             CreateQuestionRequest request,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
-            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, request, token), cancellationToken);
+            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, request, currentUserId, isAdmin, isInstructor, token), cancellationToken);
 
         private async Task<Guid> HandleCoreAsync(
             Guid quizId,
             CreateQuestionRequest request,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
         {
             var quiz = await _quizRepository.GetByIdAsync(
@@ -44,6 +53,8 @@ namespace LMS.Application.Features.QuizQuestions.CreateQuestion
                 throw new KeyNotFoundException(
                     "Quiz not found.");
             }
+
+            await _ownership.CheckQuizAsync(quiz.Id, currentUserId, isAdmin, isInstructor, cancellationToken);
 
             await _ensureQuizEditable.CheckAsync(quizId, cancellationToken);
 

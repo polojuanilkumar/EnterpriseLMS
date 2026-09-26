@@ -311,6 +311,7 @@ builder.Services.AddScoped<PublishQuizHandler>();
 builder.Services.AddScoped<UnpublishQuizHandler>();
 builder.Services.AddScoped<DeleteQuizHandler>();
 builder.Services.AddScoped<EnsureQuizEditable>();
+builder.Services.AddScoped<EnsureQuizOwnership>();
 
 builder.Services.AddScoped<IQuizQuestionRepository, QuizQuestionRepository>();
 builder.Services.AddScoped<CreateQuestionHandler>();

@@ -8,13 +8,16 @@ namespace LMS.Application.Features.QuizQuestions.UpdateQuestion
 {
     public sealed class UpdateQuestionHandler
     {
+        private readonly EnsureQuizOwnership _ownership;
         private readonly IQuizQuestionRepository _questionRepository;
 
         private readonly EnsureQuizEditable _ensureQuizEditable;
 
         public UpdateQuestionHandler(
-            IQuizQuestionRepository questionRepository, EnsureQuizEditable ensureQuizEditable)
+            IQuizQuestionRepository questionRepository, EnsureQuizEditable ensureQuizEditable,
+            EnsureQuizOwnership ownership)
         {
+            _ownership = ownership;
             _questionRepository = questionRepository;
             _ensureQuizEditable = ensureQuizEditable;
         }
@@ -23,13 +26,19 @@ namespace LMS.Application.Features.QuizQuestions.UpdateQuestion
             Guid quizId,
             Guid questionId,
             UpdateQuestionRequest request,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
-            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, questionId, request, token), cancellationToken);
+            => _ensureQuizEditable.ExecuteAsync(quizId, token => HandleCoreAsync(quizId, questionId, request, currentUserId, isAdmin, isInstructor, token), cancellationToken);
 
         private async Task HandleCoreAsync(
             Guid quizId,
             Guid questionId,
             UpdateQuestionRequest request,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
         {
             var question =
@@ -48,6 +57,8 @@ namespace LMS.Application.Features.QuizQuestions.UpdateQuestion
                 throw new KeyNotFoundException(
                     "Question not found.");
             }
+
+            await _ownership.CheckQuizAsync(question.QuizId, currentUserId, isAdmin, isInstructor, cancellationToken);
 
             await _ensureQuizEditable.CheckAsync(quizId, cancellationToken);
 

@@ -10,13 +10,16 @@ namespace LMS.Application.Features.Quizzes.CreateQuiz
 {
     public sealed class CreateQuizHandler
     {
+        private readonly EnsureQuizOwnership _ownership;
         private readonly ILessonRepository _lessonRepository;
         private readonly IQuizRepository _quizRepository;
 
         public CreateQuizHandler(
             ILessonRepository lessonRepository,
-            IQuizRepository quizRepository)
+            IQuizRepository quizRepository,
+            EnsureQuizOwnership ownership)
         {
+            _ownership = ownership;
             _lessonRepository = lessonRepository;
             _quizRepository = quizRepository;
         }
@@ -24,6 +27,9 @@ namespace LMS.Application.Features.Quizzes.CreateQuiz
         public async Task<QuizResponse> HandleAsync(
             Guid lessonId,
             CreateQuizRequest request,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
         {
             var lesson = await _lessonRepository.GetByIdAsync(
@@ -35,6 +41,8 @@ namespace LMS.Application.Features.Quizzes.CreateQuiz
                 throw new KeyNotFoundException(
                     "Lesson not found.");
             }
+
+            await _ownership.CheckLessonAsync(lesson.Id, currentUserId, isAdmin, isInstructor, cancellationToken);
 
             var existingQuiz =
                 await _quizRepository.GetByLessonIdAsync(

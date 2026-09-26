@@ -11,6 +11,7 @@ namespace LMS.Application.Features.Quizzes.PublishQuiz
 {
     public sealed class PublishQuizHandler
     {
+        private readonly EnsureQuizOwnership _ownership;
         private readonly IQuizRepository _quizRepository;
         private readonly IQuizQuestionRepository _questionRepository;
         private readonly IQuizOptionRepository _optionRepository;
@@ -20,8 +21,10 @@ namespace LMS.Application.Features.Quizzes.PublishQuiz
             IQuizRepository quizRepository,
             IQuizQuestionRepository questionRepository,
             IQuizOptionRepository optionRepository,
-            EnsureQuizEditable ensureQuizEditable)
+            EnsureQuizEditable ensureQuizEditable,
+            EnsureQuizOwnership ownership)
         {
+            _ownership = ownership;
             _quizRepository = quizRepository;
             _questionRepository = questionRepository;
             _optionRepository = optionRepository;
@@ -30,12 +33,18 @@ namespace LMS.Application.Features.Quizzes.PublishQuiz
 
         public Task HandleAsync(
             Guid lessonId,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
             => _ensureQuizEditable.ExecuteForLessonAsync(lessonId,
-                token => HandleCoreAsync(lessonId, token), cancellationToken);
+                token => HandleCoreAsync(lessonId, currentUserId, isAdmin, isInstructor, token), cancellationToken);
 
         private async Task HandleCoreAsync(
             Guid lessonId,
+            Guid currentUserId,
+            bool isAdmin,
+            bool isInstructor,
             CancellationToken cancellationToken = default)
         {
             var quiz = await _quizRepository.GetByLessonIdAsync(
@@ -43,6 +52,8 @@ namespace LMS.Application.Features.Quizzes.PublishQuiz
 
             if (quiz is null)
                 throw new KeyNotFoundException("Quiz not found.");
+
+            await _ownership.CheckLessonAsync(quiz.LessonId, currentUserId, isAdmin, isInstructor, cancellationToken);
 
             var questions = await _questionRepository.GetByQuizIdAsync(
                 quiz.Id, cancellationToken);
