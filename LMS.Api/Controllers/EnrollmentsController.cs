@@ -1,4 +1,5 @@
-﻿using LMS.Application.Features.Enrollments.CancelEnrollment;
+﻿using LMS.Application.Common.Models;
+using LMS.Application.Features.Enrollments.CancelEnrollment;
 using LMS.Application.Features.Enrollments.CompleteEnrollment;
 using LMS.Application.Features.Enrollments.EnrollCourse;
 using LMS.Application.Features.Enrollments.GetEnrollmentById;
@@ -132,7 +133,13 @@ namespace LMS.Api.Controllers
         }
 
 
+        [Authorize(Roles = "Student")]
         [HttpPatch("{id:guid}/complete")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Complete(
     Guid id,
     CancellationToken cancellationToken)
@@ -140,21 +147,28 @@ namespace LMS.Api.Controllers
             var userIdClaim =
                 User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (!Guid.TryParse(userIdClaim, out var currentUserId))
+            if (!Guid.TryParse(userIdClaim, out var currentUserId) || currentUserId == Guid.Empty)
             {
                 return Unauthorized();
             }
 
-            await _completeEnrollmentHandler.HandleAsync(
-                id,
-                currentUserId,
-                cancellationToken);
-
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Enrollment completed successfully."
-            });
+                await _completeEnrollmentHandler.HandleAsync(
+                    id,
+                    currentUserId,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Enrollment completed successfully."
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 
