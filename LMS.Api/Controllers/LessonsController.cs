@@ -93,26 +93,44 @@ namespace LMS.Api.Controllers
 
         }
 
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [HttpPost("/api/Sections/{sectionId:guid}/lessons")]
         public async Task<IActionResult> Create(
             Guid sectionId,
             [FromBody] CreateLessonRequest request,
             CancellationToken cancellationToken)
         {
-            var result =
-                await _createLessonHandler.HandleAsync(
-                    sectionId,
-                    request,
-                    cancellationToken);
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
+            {
+                return Unauthorized();
+            }
 
-            return StatusCode(
-                StatusCodes.Status201Created,
-                new
-                {
-                    success = true,
-                    message = "Lesson created successfully.",
-                    data = result
-                });
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                var result =
+                    await _createLessonHandler.HandleAsync(
+                        sectionId,
+                        request,
+                        currentUserId,
+                        isAdmin,
+                        cancellationToken);
+
+                return StatusCode(
+                    StatusCodes.Status201Created,
+                    new
+                    {
+                        success = true,
+                        message = "Lesson created successfully.",
+                        data = result
+                    });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
         [HttpGet("/api/Sections/{sectionId:guid}/lessons")]
@@ -151,72 +169,144 @@ namespace LMS.Api.Controllers
             });
         }
 
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [HttpPut("/api/Lessons/{id:guid}")]
         public async Task<IActionResult> Update(
             Guid id,
             [FromBody] UpdateLessonRequest request,
             CancellationToken cancellationToken)
         {
-            var result =
-                await _updateLessonHandler.HandleAsync(
-                    id,
-                    request,
-                    cancellationToken);
-
-            return Ok(new
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
             {
-                success = true,
-                message = "Lesson updated successfully.",
-                data = result
-            });
+                return Unauthorized();
+            }
+
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                var result =
+                    await _updateLessonHandler.HandleAsync(
+                        id,
+                        request,
+                        currentUserId,
+                        isAdmin,
+                        cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Lesson updated successfully.",
+                    data = result
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [HttpDelete("/api/Lessons/{id:guid}")]
         public async Task<IActionResult> Delete(
             Guid id,
             CancellationToken cancellationToken)
         {
-            await _deleteLessonHandler.HandleAsync(
-                id,
-                cancellationToken);
-
-            return Ok(new
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
             {
-                success = true,
-                message = "Lesson deleted successfully."
-            });
+                return Unauthorized();
+            }
+
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                await _deleteLessonHandler.HandleAsync(
+                    id,
+                    currentUserId,
+                    isAdmin,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Lesson deleted successfully."
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [HttpPatch("/api/Lessons/{id:guid}/publish")]
         public async Task<IActionResult> Publish(
             Guid id,
             CancellationToken cancellationToken)
         {
-            await _publishLessonHandler.HandleAsync(
-                id,
-                cancellationToken);
-
-            return Ok(new
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
             {
-                success = true,
-                message = "Lesson published successfully."
-            });
+                return Unauthorized();
+            }
+
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                await _publishLessonHandler.HandleAsync(
+                    id,
+                    currentUserId,
+                    isAdmin,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Lesson published successfully."
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
+        [Authorize(Roles = "Instructor,Admin,SuperAdmin")]
         [HttpPatch("/api/Lessons/{id:guid}/unpublish")]
         public async Task<IActionResult> Unpublish(
             Guid id,
             CancellationToken cancellationToken)
         {
-            await _unpublishLessonHandler.HandleAsync(
-                id,
-                cancellationToken);
-
-            return Ok(new
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentUserId)
+                || currentUserId == Guid.Empty)
             {
-                success = true,
-                message = "Lesson unpublished successfully."
-            });
+                return Unauthorized();
+            }
+
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
+            try
+            {
+                await _unpublishLessonHandler.HandleAsync(
+                    id,
+                    currentUserId,
+                    isAdmin,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Lesson unpublished successfully."
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
         }
 
 
