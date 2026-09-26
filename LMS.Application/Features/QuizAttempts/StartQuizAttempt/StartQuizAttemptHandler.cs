@@ -1,8 +1,5 @@
 using LMS.Application.Features.Quizzes.Common;
 using LMS.Application.Interfaces.QuizOptions;
-using LMS.Application.Interfaces.CourseSections;
-using LMS.Application.Interfaces.Enrollments;
-using LMS.Application.Interfaces.Lessons;
 using LMS.Application.Interfaces.QuizAttempts;
 using LMS.Application.Interfaces.QuizQuestions;
 using LMS.Application.Interfaces.Quizzes;
@@ -15,23 +12,18 @@ namespace LMS.Application.Features.QuizAttempts.StartQuizAttempt
     {
         private readonly IQuizAttemptRepository _attempts;
         private readonly IQuizRepository _quizzes;
-        private readonly ILessonRepository _lessons;
-        private readonly ICourseSectionRepository _sections;
-        private readonly ICourseEnrollmentRepository _enrollments;
+        private readonly EnsureQuizReadable _readable;
         private readonly IQuizQuestionRepository _questions;
         private readonly IQuizOptionRepository _options;
         private readonly TimeProvider _timeProvider;
 
         public StartQuizAttemptHandler(IQuizAttemptRepository attempts, IQuizRepository quizzes,
-            ILessonRepository lessons, ICourseSectionRepository sections,
-            ICourseEnrollmentRepository enrollments, IQuizQuestionRepository questions,
+            EnsureQuizReadable readable, IQuizQuestionRepository questions,
             IQuizOptionRepository options, TimeProvider timeProvider)
         {
             _attempts = attempts;
             _quizzes = quizzes;
-            _lessons = lessons;
-            _sections = sections;
-            _enrollments = enrollments;
+            _readable = readable;
             _questions = questions;
             _options = options;
             _timeProvider = timeProvider;
@@ -46,13 +38,7 @@ namespace LMS.Application.Features.QuizAttempts.StartQuizAttempt
                 if (quiz is null || !quiz.IsPublished)
                     throw new KeyNotFoundException("Published quiz not found.");
 
-                var lesson = await _lessons.GetByIdAsync(quiz.LessonId, token)
-                    ?? throw new KeyNotFoundException("Lesson not found.");
-                var section = await _sections.GetByIdAsync(lesson.SectionId, token)
-                    ?? throw new KeyNotFoundException("Course section not found.");
-                var enrollment = await _enrollments.GetByCourseAndUserAsync(section.CourseId, userId, token);
-                if (enrollment is null || enrollment.Status != EnrollmentStatus.Active)
-                    throw new UnauthorizedAccessException("An active course enrollment is required.");
+                await _readable.CheckAsync(quiz, userId, canViewUnpublished: false, token);
 
                 var attempts = await _attempts.GetByQuizAndUserAsync(quizId, userId, token);
                 // Capture server time after acquiring the lock, not while waiting for it.

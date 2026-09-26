@@ -15,15 +15,18 @@ namespace LMS.Application.Features.QuizAttempts.SubmitQuizAttempt
         private readonly IQuizQuestionRepository _questions;
         private readonly IQuizOptionRepository _options;
         private readonly TimeProvider _timeProvider;
+        private readonly EnsureQuizReadable _readable;
 
         public SubmitQuizAttemptHandler(IQuizAttemptRepository attempts, IQuizRepository quizzes,
-            IQuizQuestionRepository questions, IQuizOptionRepository options, TimeProvider timeProvider)
+            IQuizQuestionRepository questions, IQuizOptionRepository options, TimeProvider timeProvider,
+            EnsureQuizReadable readable)
         {
             _attempts = attempts;
             _quizzes = quizzes;
             _questions = questions;
             _options = options;
             _timeProvider = timeProvider;
+            _readable = readable;
         }
 
         public async Task<SubmitQuizAttemptResponse> HandleAsync(Guid quizId, Guid attemptId,
@@ -47,7 +50,10 @@ namespace LMS.Application.Features.QuizAttempts.SubmitQuizAttempt
 
                 var quiz = await _quizzes.GetByIdAsync(quizId, token);
                 if (quiz is null || !quiz.IsPublished)
-                    throw new InvalidOperationException("The quiz is not published.");
+                    throw new KeyNotFoundException("Published quiz not found.");
+
+                // Recheck current access inside the submission transaction before scoring or saving answers.
+                await _readable.CheckAsync(quiz, userId, canViewUnpublished: false, token);
 
                 if (request is null || request.Answers is null || request.Answers.Any(x => x is null))
                     throw new ArgumentException("Answers must be a non-null list.");
