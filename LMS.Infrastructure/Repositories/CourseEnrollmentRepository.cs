@@ -2,6 +2,8 @@
 using LMS.Domain.Entities;
 using LMS.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
+using System.Data;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,6 +19,40 @@ namespace LMS.Infrastructure.Repositories
             LMSDbContext context)
         {
             _context = context;
+        }
+
+        public async Task ExecuteCompletionTransactionAsync(Guid enrollmentId,
+            Func<CancellationToken, Task> action, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync(
+                    IsolationLevel.Serializable, cancellationToken);
+
+                // Serialize repeated completion requests before loading tracked enrollment state.
+                // Serializable also holds prerequisite reads stable until the completion is saved.
+                await _context.CourseEnrollments.FromSqlInterpolated(
+                    $"SELECT * FROM [CourseEnrollments] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {enrollmentId}")
+                    .AsNoTracking().ToListAsync(cancellationToken);
+
+                await action(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (Exception exception) when (IsDeadlock(exception))
+            {
+                throw new InvalidOperationException(
+                    "A conflicting enrollment operation occurred. Refresh and try again.", exception);
+            }
+        }
+
+        private static bool IsDeadlock(Exception exception)
+        {
+            for (Exception? current = exception; current is not null; current = current.InnerException)
+            {
+                if (current is SqlException sql && sql.Errors.Cast<SqlError>().Any(error => error.Number == 1205))
+                    return true;
+            }
+            return false;
         }
 
         public async Task AddAsync(
