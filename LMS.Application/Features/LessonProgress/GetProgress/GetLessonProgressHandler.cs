@@ -1,4 +1,4 @@
-﻿using LMS.Application.Features.LessonProgress.Common;
+using LMS.Application.Features.LessonProgress.Common;
 using LMS.Application.Features.Lessons.Common;
 using LMS.Application.Interfaces.LessonProgresses;
 using LMS.Application.Interfaces.Lessons;
@@ -58,11 +58,7 @@ namespace LMS.Application.Features.LessonProgress.GetProgress
             if (progress.LessonId != lesson.Id)
                 throw new KeyNotFoundException("Lesson progress not found.");
 
-            progress.Access();
-
-            await _lessonProgressRepository.SaveChangesAsync(
-                cancellationToken);
-
+            // Reads, including completed learners' reads, return the stored access timestamp.
             return MapToResponse(progress);
         }
 
