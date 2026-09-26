@@ -12,18 +12,23 @@ namespace LMS.Application.Features.Lessons.UpdateLesson
     {
         private readonly ILessonRepository _lessonRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly EnsureLessonOwnership _ownership;
 
         public UpdateLessonHandler(
             ILessonRepository lessonRepository,
+            EnsureLessonOwnership ownership,
             IUnitOfWork unitOfWork)
         {
             _lessonRepository = lessonRepository;
             _unitOfWork = unitOfWork;
+            _ownership = ownership;
         }
 
         public async Task<LessonResponse> HandleAsync(
             Guid id,
             UpdateLessonRequest request,
+            Guid currentUserId,
+            bool isAdmin,
             CancellationToken cancellationToken = default)
         {
             var lesson =
@@ -31,11 +36,13 @@ namespace LMS.Application.Features.Lessons.UpdateLesson
                     id,
                     cancellationToken);
 
-            if (lesson is null)
+            if (lesson is null || lesson.Id != id)
             {
                 throw new KeyNotFoundException(
                     "Lesson not found.");
             }
+
+            await _ownership.CheckSectionAsync(lesson.SectionId, currentUserId, isAdmin, cancellationToken);
 
             if (string.IsNullOrWhiteSpace(request.Title))
             {

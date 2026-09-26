@@ -1,5 +1,4 @@
 ﻿using LMS.Application.Features.Lessons.Common;
-using LMS.Application.Interfaces.CourseSections;
 using LMS.Application.Interfaces.Lessons;
 using LMS.Application.Interfaces.Persistence;
 using LMS.Domain.Entities;
@@ -13,34 +12,27 @@ namespace LMS.Application.Features.Lessons.CreateLesson
     public sealed class CreateLessonHandler
     {
         private readonly ILessonRepository _lessonRepository;
-        private readonly ICourseSectionRepository _sectionRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly EnsureLessonOwnership _ownership;
 
         public CreateLessonHandler(
             ILessonRepository lessonRepository,
-            ICourseSectionRepository sectionRepository,
+            EnsureLessonOwnership ownership,
             IUnitOfWork unitOfWork)
         {
             _lessonRepository = lessonRepository;
-            _sectionRepository = sectionRepository;
             _unitOfWork = unitOfWork;
+            _ownership = ownership;
         }
 
         public async Task<LessonResponse> HandleAsync(
             Guid sectionId,
             CreateLessonRequest request,
+            Guid currentUserId,
+            bool isAdmin,
             CancellationToken cancellationToken = default)
         {
-            var section =
-                await _sectionRepository.GetByIdAsync(
-                    sectionId,
-                    cancellationToken);
-
-            if (section is null)
-            {
-                throw new KeyNotFoundException(
-                    "Course section not found.");
-            }
+            await _ownership.CheckSectionAsync(sectionId, currentUserId, isAdmin, cancellationToken);
 
             if (string.IsNullOrWhiteSpace(request.Title))
             {
