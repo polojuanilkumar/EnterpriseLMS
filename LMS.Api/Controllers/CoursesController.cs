@@ -1,4 +1,6 @@
-﻿using LMS.Application.Features.CourseProgress.GetProgress;
+﻿using LMS.Application.Common.Models;
+using LMS.Application.Features.CourseProgress.Common;
+using LMS.Application.Features.CourseProgress.GetProgress;
 using LMS.Application.Features.Courses.ArchiveCourse;
 using LMS.Application.Features.Courses.CreateCourse;
 using LMS.Application.Features.Courses.GetCourseById;
@@ -302,33 +304,42 @@ namespace LMS.Api.Controllers
 
         [Authorize(Roles = "Student")]
         [HttpGet("/api/Courses/{id:guid}/progress")]
+        [ProducesResponseType(typeof(ApiResponse<CourseProgressResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetProgress(
-    Guid id,
-    CancellationToken cancellationToken)
+            Guid id,
+            CancellationToken cancellationToken)
         {
-            var email = User.FindFirst(
-                System.Security.Claims.ClaimTypes.Email)?.Value;
-
-            if (string.IsNullOrWhiteSpace(email))
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
             {
                 return Unauthorized(new
                 {
                     success = false,
-                    message = "Authenticated user email was not found."
+                    message = "Authenticated user ID was not found."
                 });
             }
 
-            var result = await _getCourseProgressHandler.HandleAsync(
-                id,
-                email,
-                cancellationToken);
-
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Course progress retrieved successfully.",
-                data = result
-            });
+                var result = await _getCourseProgressHandler.HandleAsync(
+                    id,
+                    userId,
+                    cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Course progress retrieved successfully.",
+                    data = result
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
 
