@@ -1,4 +1,5 @@
-﻿using LMS.Application.Features.CourseSections;
+using LMS.Application.Common.Models;
+using LMS.Application.Features.CourseSections;
 using LMS.Application.Features.CourseSections.CreateCourseSection;
 using LMS.Application.Features.CourseSections.DeleteCourseSection;
 using LMS.Application.Features.CourseSections.GetCourseSectionById;
@@ -77,41 +78,81 @@ namespace LMS.Api.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CourseSectionResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid learner user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetAll(
             Guid courseId,
             CancellationToken cancellationToken)
         {
-            var sections =
-                await _getAllHandler.HandleAsync(
-                    courseId,
-                    cancellationToken);
+            var canViewUnpublished = User.IsInRole("Instructor")
+                || User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+            var hasUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                && userId != Guid.Empty;
+            if (!canViewUnpublished && !hasUserId)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Course sections retrieved successfully.",
-                data = sections
-            });
+                var sections =
+                    await _getAllHandler.HandleAsync(
+                        courseId,
+                        userId,
+                        canViewUnpublished,
+                        cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Course sections retrieved successfully.",
+                    data = sections
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
         [HttpGet("{id:guid}")]
+        [ProducesResponseType(typeof(ApiResponse<CourseSectionResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid learner user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(
             Guid courseId,
             Guid id,
             CancellationToken cancellationToken)
         {
-            var section =
-                await _getByIdHandler.HandleAsync(
-                    courseId,
-                    id,
-                    cancellationToken);
+            var canViewUnpublished = User.IsInRole("Instructor")
+                || User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+            var hasUserId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                && userId != Guid.Empty;
+            if (!canViewUnpublished && !hasUserId)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
 
-            return Ok(new
+            try
             {
-                success = true,
-                message = "Course section retrieved successfully.",
-                data = section
-            });
+                var section =
+                    await _getByIdHandler.HandleAsync(
+                        courseId,
+                        id,
+                        userId,
+                        canViewUnpublished,
+                        cancellationToken);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Course section retrieved successfully.",
+                    data = section
+                });
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
+            }
         }
 
         [HttpPut("{id:guid}")]
