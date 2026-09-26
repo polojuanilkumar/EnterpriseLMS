@@ -109,7 +109,7 @@ namespace LMS.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<SubmitQuizAttemptResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest, Description = "ApiResponse<object> for invalid argument values; ValidationProblemDetails for automatic model binding or validation failures.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized, Description = "Missing or invalid user ID returns ApiResponse<object>; a JWT challenge has no response body.")]
-        [ProducesResponseType(StatusCodes.Status403Forbidden, Description = "Role authorization failure; no response body.")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden, Description = "Read access denied returns ApiResponse<object>; role authorization failure has no response body.")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Submit(Guid quizId, Guid attemptId,
@@ -127,6 +127,10 @@ namespace LMS.Api.Controllers
             catch (KeyNotFoundException exception)
             {
                 return NotFound(ApiResponse<object>.Fail(exception.Message));
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail(exception.Message));
             }
             catch (ArgumentException exception)
             {
