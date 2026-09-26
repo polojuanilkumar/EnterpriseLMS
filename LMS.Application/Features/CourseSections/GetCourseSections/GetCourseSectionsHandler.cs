@@ -1,4 +1,5 @@
-﻿using LMS.Application.Interfaces.Courses;
+using LMS.Application.Features.Lessons.Common;
+using LMS.Application.Interfaces.Courses;
 using LMS.Application.Interfaces.CourseSections;
 using System;
 using System.Collections.Generic;
@@ -10,17 +11,22 @@ namespace LMS.Application.Features.CourseSections.GetCourseSections
     {
         private readonly ICourseSectionRepository _sectionRepository;
         private readonly ICourseRepository _courseRepository;
+        private readonly EnsureLessonReadable _readable;
 
         public GetCourseSectionsHandler(
             ICourseSectionRepository sectionRepository,
-            ICourseRepository courseRepository)
+            ICourseRepository courseRepository,
+            EnsureLessonReadable readable)
         {
             _sectionRepository = sectionRepository;
             _courseRepository = courseRepository;
+            _readable = readable;
         }
 
         public async Task<IReadOnlyList<CourseSectionResponse>> HandleAsync(
             Guid courseId,
+            Guid userId,
+            bool canViewUnpublished,
             CancellationToken cancellationToken = default)
         {
             var course =
@@ -33,6 +39,8 @@ namespace LMS.Application.Features.CourseSections.GetCourseSections
                 throw new KeyNotFoundException(
                     "Course not found.");
             }
+
+            await _readable.CheckCourseAsync(course.Id, userId, canViewUnpublished, cancellationToken);
 
             var sections =
                 await _sectionRepository.GetByCourseIdAsync(
