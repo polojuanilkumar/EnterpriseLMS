@@ -8,16 +8,21 @@ namespace LMS.Application.Features.Lessons.GetLessonById
 {
     public sealed class GetLessonByIdHandler
     {
+        private readonly EnsureLessonReadable _readable;
         private readonly ILessonRepository _lessonRepository;
 
         public GetLessonByIdHandler(
-            ILessonRepository lessonRepository)
+            ILessonRepository lessonRepository,
+            EnsureLessonReadable readable)
         {
+            _readable = readable;
             _lessonRepository = lessonRepository;
         }
 
         public async Task<LessonResponse> HandleAsync(
             Guid id,
+            Guid userId,
+            bool canViewUnpublished,
             CancellationToken cancellationToken = default)
         {
             var lesson =
@@ -30,6 +35,8 @@ namespace LMS.Application.Features.Lessons.GetLessonById
                 throw new KeyNotFoundException(
                     "Lesson not found.");
             }
+
+            await _readable.CheckAsync(lesson, userId, canViewUnpublished, cancellationToken);
 
             return new LessonResponse
             {
