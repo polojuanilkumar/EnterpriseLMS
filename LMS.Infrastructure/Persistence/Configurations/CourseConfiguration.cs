@@ -25,8 +25,12 @@ namespace LMS.Infrastructure.Persistence.Configurations
                 .HasMaxLength(50)
                 .IsRequired();
 
-            builder.HasIndex(x => x.Code)
-                .IsUnique();
+            builder.HasIndex(x => new { x.OrganizationId, x.Code })
+                .IsUnique().HasFilter("[OrganizationId] IS NOT NULL");
+            builder.HasIndex(x => x.Code).IsUnique().HasFilter("[OrganizationId] IS NULL");
+
+            builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Property(x => x.Description)
                 .HasMaxLength(5000)

@@ -13,18 +13,24 @@ namespace LMS.Infrastructure.Identity
     public sealed class JwtTokenService : IJwtTokenService
     {
         private readonly IConfiguration _configuration;
+        private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> _users;
 
         public JwtTokenService(
-            IConfiguration configuration)
+            IConfiguration configuration,
+            Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> users)
         {
             _configuration = configuration;
+            _users = users;
         }
 
-        public Task<JwtTokenResult> GenerateTokenAsync(
+        public async Task<JwtTokenResult> GenerateTokenAsync(
             Guid userId,
             string email,
             IEnumerable<string> roles)
         {
+            var user = await _users.FindByIdAsync(userId.ToString())
+                ?? throw new InvalidOperationException("Account unavailable.");
+            var stamp = await _users.GetSecurityStampAsync(user);
             var key =
                 _configuration["Jwt:Key"]
                 ?? throw new InvalidOperationException(
@@ -70,6 +76,7 @@ namespace LMS.Infrastructure.Identity
                         ClaimTypes.Role,
                         role));
             }
+            claims.Add(new Claim("lms-stamp", stamp));
 
             var securityKey =
                 new SymmetricSecurityKey(
@@ -94,12 +101,12 @@ namespace LMS.Infrastructure.Identity
                 new JwtSecurityTokenHandler()
                     .WriteToken(token);
 
-            return Task.FromResult(
+            return
                 new JwtTokenResult
                 {
                     AccessToken = accessToken,
                     ExpiresAt = expiresAt
-                });
+                };
         }
     }
 }

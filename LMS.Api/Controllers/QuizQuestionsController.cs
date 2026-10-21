@@ -20,6 +20,7 @@ namespace LMS.Api.Controllers
     [ApiController]
     [Route("api/Quizzes/{quizId:guid}/questions")]
     [Authorize(Roles = "Instructor,Admin,SuperAdmin,Student")]
+    [LMS.Api.Middleware.OrganizationScope]
     public sealed class QuizQuestionsController : ControllerBase
     {
         private readonly CreateQuestionHandler _createQuestionHandler;
@@ -179,6 +180,7 @@ namespace LMS.Api.Controllers
             try
             {
                 var question = await _getQuestionByIdHandler.HandleAsync(
+                    quizId,
                     questionId,
                     userId,
                     canViewUnpublished,
@@ -367,8 +369,13 @@ namespace LMS.Api.Controllers
         public async Task<IActionResult> GetOptions(
     Guid quizId,
     Guid questionId,
-    CancellationToken cancellationToken)
+    CancellationToken cancellationToken,
+    [FromServices] LMS.Application.Features.Quizzes.Common.EnsureQuizOwnership ownership)
         {
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) || userId == Guid.Empty)
+                return Unauthorized(ApiResponse<object>.Fail("Authenticated user ID was not found."));
+            await ownership.CheckQuizAsync(quizId, userId, User.IsInRole("Admin") || User.IsInRole("SuperAdmin"),
+                User.IsInRole("Instructor"), cancellationToken);
             var options = await _getOptionsHandler.HandleAsync(
                 quizId,
                 questionId,

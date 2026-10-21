@@ -46,6 +46,12 @@ namespace LMS.Domain.Entities
 
         public void Cancel()
         {
+            if (Status != EnrollmentStatus.Active)
+            {
+                throw new InvalidOperationException(
+                    "Only active enrollments can be cancelled.");
+            }
+
             Status = EnrollmentStatus.Cancelled;
         }
 

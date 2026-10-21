@@ -1,0 +1,13 @@
+@model AssignmentPage
+@{ViewData["Title"]="Lesson assignments";}
+<h1>Lesson assignments</h1>
+@if(Model.Staff||Model.Context.Parent.CoursePublished&&Model.Context.Parent.LessonPublished)
+{<p><a href="@(Model.Root[..^12])">Back to lesson</a></p>}
+else{<p>The course or lesson is unpublished. Your historical work remains available here.</p><p><a href="/learn/@Model.OrganizationId/assignments/history">Your assignment history</a></p>}
+@if(Model.Staff){<p><a href="@Model.Root/new">Create assignment</a></p>}
+@if(Model.Assignments.Length==0){<p>No assignments are available.</p>}
+@foreach(var a in Model.Assignments)
+{
+    <section><h2><a href="@Model.Root/@a.Id">@a.Title</a></h2><p>@(a.IsPublished?"Published":"Unpublished — historical review") · Maximum marks: @a.MaximumMarks</p><p>Due (UTC): @(a.DueAtUtc?.ToString("yyyy-MM-dd HH:mm 'UTC'")??"No due date")</p></section>
+}
+<p>Assignment grades do not affect lesson or course completion.</p>

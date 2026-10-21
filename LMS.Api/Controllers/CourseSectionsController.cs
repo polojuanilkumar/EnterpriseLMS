@@ -15,6 +15,7 @@ namespace LMS.Api.Controllers
     [ApiController]
     [Route("api/Courses/{courseId:guid}/sections")]
     [Authorize]
+    [LMS.Api.Middleware.OrganizationScope]
     public sealed class CourseSectionsController : ControllerBase
     {
         private readonly CreateCourseSectionHandler _createHandler;

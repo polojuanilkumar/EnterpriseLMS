@@ -1,0 +1,2 @@
+<h1>Confirm invitation revocation</h1><p>Revoke invitation @ViewBag.Id in organization @ViewBag.OrganizationId?</p>
+<form method="post">@Html.AntiForgeryToken()<label><input name="confirmed" type="checkbox" value="true" required/>Confirm revocation</label><button type="submit">Revoke invitation</button></form>

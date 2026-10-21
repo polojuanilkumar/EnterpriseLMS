@@ -1,0 +1,21 @@
+@model ContentEditPage
+@{ViewData["Title"]=Model.ItemId.HasValue?"Edit content":"Add content";var u=Model.Unit;var root=$"/staff/{u.OrganizationId}/courses/{u.CourseId}/sections/{u.SectionId}/lessons/{u.Lesson.Id}";var action=Model.ItemId.HasValue?$"{root}/items/{Model.ItemId}/edit":$"{root}/items/new";}
+<a href="@root">@u.Lesson.Title</a><h1>@ViewData["Title"]</h1>
+<form action="@action" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" role="alert"></div>
+    <p><label for="Type">Type</label><select id="Type" name="Type">
+        @foreach(var option in new[] {(1,"Text"),(2,"YouTube"),(3,"MP3"),(4,"MP4"),(5,"PDF")})
+        { <option value="@option.Item1" selected="@(option.Item1==Model.Form.Type)">@option.Item2</option> }
+    </select></p>
+    <p><label for="Title">Title</label><input id="Title" name="Title" value="@Model.Form.Title" maxlength="200" required /></p>
+    <p><label for="DisplayOrder">Display order</label><input id="DisplayOrder" name="DisplayOrder" type="number" min="0" value="@Model.Form.DisplayOrder" required /></p>
+    <p><label><input type="checkbox" name="IsRequired" value="true" checked="@Model.Form.IsRequired" /> Required</label><input type="hidden" name="IsRequired" value="false" /></p>
+    <p><label for="Text">Text (Text items only)</label><textarea id="Text" name="Text" rows="8">@Model.Form.Text</textarea></p>
+    <p><label for="YouTubeUrl">YouTube URL (YouTube items only)</label><input id="YouTubeUrl" name="YouTubeUrl" type="url" value="@Model.Form.YouTubeUrl" /></p>
+    <p><label for="AssetId">Existing asset ID (media/PDF only)</label><input id="AssetId" name="AssetId" value="@Model.Form.AssetId" /></p>
+    <p><label for="File">Or upload a file (clear the asset ID first)</label><input id="File" name="File" type="file" accept=".mp3,.mp4,.pdf" /></p>
+    <p>MP3: 25 MiB; MP4: 200 MiB; PDF: 25 MiB. Choose the matching content type. Clear fields belonging to other types. Media uploads must use audio/mpeg, video/mp4 or application/pdf respectively.</p>
+    <p>Saved uploads are retained even if you later replace/delete the item. Required flags do not change completion policy.</p>
+    <button type="submit">Save content</button>
+</form>

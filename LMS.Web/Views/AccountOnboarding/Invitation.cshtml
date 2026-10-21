@@ -1,0 +1,14 @@
+@model RecoveryForm
+@{Layout=null;}
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><title>Accept invitation</title></head><body><main>
+<h1>Accept invitation</h1><p>@Model.Email is invited to @Model.Organization as @Model.Role.</p>
+@if(Model.ExistingAccount){<p>Sign in with the matching verified email before accepting.</p><a href="/account/login">Sign in</a>}
+<form method="post" action="/account/invitation">@Html.AntiForgeryToken()
+@if(!Model.ExistingAccount){
+<label>First name <input name="FirstName" required maxlength="100" autocomplete="given-name"/></label>
+<label>Last name <input name="LastName" required maxlength="100" autocomplete="family-name"/></label>
+<p>Use at least eight password characters with upper and lower case, a digit and a symbol.</p>
+<label>Password <input name="Password" type="password" required maxlength="1024" autocomplete="new-password"/></label>
+}
+<button type="submit">Accept organization invitation</button></form>
+<a href="/account/organizations">My organizations</a></main></body></html>

@@ -24,6 +24,7 @@ namespace LMS.Application.Features.QuizQuestions.GetQuestionById
         }
 
         public async Task<QuizQuestionResponse> HandleAsync(
+            Guid quizId,
             Guid questionId,
             Guid userId,
             bool canViewUnpublished,
@@ -36,7 +37,7 @@ namespace LMS.Application.Features.QuizQuestions.GetQuestionById
                     questionId,
                     cancellationToken);
 
-            if (question is null)
+            if (question is null || question.QuizId != quizId)
             {
                 throw new KeyNotFoundException(
                     "Question not found.");

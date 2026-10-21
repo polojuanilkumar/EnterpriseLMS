@@ -1,0 +1,23 @@
+@model AssignmentPage
+@{var s=Model.Submission!;var target=Model.Root+$"/{Model.Assignment!.Id}/submissions/{s.Id}";ViewData["Title"]="Submission review";}
+<h1>Submission review: @Model.Assignment!.Title</h1>
+<p><a href="@Model.Root/@Model.Assignment.Id">Assignment</a></p>
+<div asp-validation-summary="All"></div>
+<p>Submitted @s.SubmittedAt.ToString("yyyy-MM-dd HH:mm:ss 'UTC'") · Maximum marks at submission: @s.MaximumMarksSnapshot</p>
+<h2>Instructions at submission</h2><div class="lesson-text">@s.InstructionsSnapshot</div>
+<h2>Submitted work</h2><div class="lesson-text">@s.Text</div>
+@if(s.HasAttachment){<p><a href="@target/attachment">Download PDF</a> — @s.Filename</p>}
+@if(s.Grade is {} g)
+{<h2>Grade and feedback</h2><p>@g.Marks / @s.MaximumMarksSnapshot · Graded @g.GradedAt.ToString("yyyy-MM-dd HH:mm:ss 'UTC'")</p><div class="lesson-text">@g.Feedback</div><p>This final grade cannot be overwritten.</p>}
+else if(Model.Staff)
+{
+    <form method="post" action="@target/grade" data-assignment-final>
+        @Html.AntiForgeryToken()
+        <label asp-for="GradeForm.Marks">Marks</label><input asp-for="GradeForm.Marks" type="number" min="0" max="@s.MaximumMarksSnapshot.ToString(System.Globalization.CultureInfo.InvariantCulture)" step="0.01" />
+        <label asp-for="GradeForm.Feedback">Plain-text feedback</label><textarea asp-for="GradeForm.Feedback" maxlength="20000"></textarea>
+        <label><input asp-for="GradeForm.Confirmed" required /> Confirm the final grade. It cannot be changed.</label>
+        <button type="submit">Save final grade</button>
+    </form>
+}
+else{<p>Awaiting staff grading.</p>}
+<script src="~/js/assignments.js" asp-append-version="true" defer></script>

@@ -7,8 +7,8 @@ namespace LMS.Application.Interfaces.Enrollments
 {
     public interface ICourseEnrollmentRepository
     {
-        // Run prerequisite reads and the completion save under one enrollment lock.
-        Task ExecuteCompletionTransactionAsync(Guid enrollmentId,
+        // Serialize cancellation and completion: load, validate, and save under the same row lock.
+        Task ExecuteEnrollmentTransactionAsync(Guid enrollmentId,
             Func<CancellationToken, Task> action, CancellationToken cancellationToken = default);
 
         Task AddAsync(

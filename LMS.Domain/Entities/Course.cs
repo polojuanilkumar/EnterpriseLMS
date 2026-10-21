@@ -35,6 +35,17 @@ namespace LMS.Domain.Entities
 
         public Guid Id { get; private set; }
 
+        // Nullable only for the staged legacy transition. New courses must be assigned before saving.
+        public Guid? OrganizationId { get; private set; }
+
+        public void AssignOrganization(Guid organizationId)
+        {
+            if (organizationId == Guid.Empty) throw new ArgumentException("Organization is required.");
+            if (OrganizationId.HasValue && OrganizationId != organizationId)
+                throw new InvalidOperationException("Course organization ownership cannot be transferred.");
+            OrganizationId = organizationId;
+        }
+
         public string Title { get; private set; } = string.Empty;
 
         public string Code { get; private set; } = string.Empty;
@@ -76,6 +87,13 @@ namespace LMS.Domain.Entities
             DurationInMinutes = durationInMinutes;
             ThumbnailUrl = thumbnailUrl;
 
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void AssignInstructor(Guid instructorId)
+        {
+            if (instructorId == Guid.Empty) throw new ArgumentException("Instructor is required.");
+            InstructorId = instructorId;
             UpdatedAt = DateTime.UtcNow;
         }
 

@@ -1,0 +1,10 @@
+@model LessonsPage
+@{ ViewData["Title"]=Model.Section.Title;var root=$"/staff/{Model.OrganizationId}/courses/{Model.Course.Id}"; }
+<a href="@root">@Model.Course.Title</a><h1>@Model.Section.Title</h1><h2>Lessons / Units</h2>
+<p><a href="@root/sections/@Model.Section.Id/edit">Edit section</a> | <a href="@root/sections/@Model.Section.Id/lessons/new">Create lesson / Unit</a></p>
+<ol>
+@foreach(var lesson in Model.Lessons)
+{
+    <li><a href="@root/sections/@Model.Section.Id/lessons/@lesson.Id">@lesson.Title</a> ? @(lesson.IsPublished ? "Published" : "Draft")</li>
+}
+</ol>

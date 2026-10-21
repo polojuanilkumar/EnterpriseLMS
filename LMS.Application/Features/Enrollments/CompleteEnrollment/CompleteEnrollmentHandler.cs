@@ -36,7 +36,7 @@ namespace LMS.Application.Features.Enrollments.CompleteEnrollment
             Guid enrollmentId,
             Guid currentUserId,
             CancellationToken cancellationToken = default)
-            => _enrollmentRepository.ExecuteCompletionTransactionAsync(enrollmentId,
+            => _enrollmentRepository.ExecuteEnrollmentTransactionAsync(enrollmentId,
                 token => HandleCoreAsync(enrollmentId, currentUserId, token), cancellationToken);
 
         private async Task HandleCoreAsync(Guid enrollmentId, Guid currentUserId,

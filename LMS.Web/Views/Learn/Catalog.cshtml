@@ -1,0 +1,18 @@
+@model CatalogPage
+@{ViewData["Title"]="Course catalog";var root=$"/learn/{Model.OrganizationId}/courses";}
+<a href="@root">My courses</a>
+<h1>Published course catalog</h1>
+@if(Model.Courses.Length==0){<p>No published courses are available in this organization.</p>}
+@foreach(var row in Model.Courses)
+{
+    <section class="lesson-item"><h2>@row.Course.Title</h2><p>@row.Course.Description</p>
+    <p>Enrollment: @(row.Enrollment?.State??"Not enrolled")</p>
+    @if(row.Enrollment is null||row.Enrollment.Status==3)
+    {
+        <form method="post" action="@root/@row.Course.Id/enroll">@Html.AntiForgeryToken()
+        @if(row.Enrollment?.Status==3){<label><input type="checkbox" name="confirmedReenrollment" value="true" required /> Confirm re-enrollment using the existing Cancelled enrollment</label>}
+        <button type="submit">@(row.Enrollment?.Status==3?"Re-enroll":"Enroll")</button></form>
+    }
+    else {<a href="@root/@row.Course.Id">Open enrolled course</a>}
+    </section>
+}

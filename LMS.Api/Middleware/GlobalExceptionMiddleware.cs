@@ -1,5 +1,7 @@
 ﻿using LMS.Application.Common.Models;
 using System.Net;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
@@ -50,6 +52,9 @@ namespace LMS.Api.Middleware
             context.Response.StatusCode =
                 exception switch
                 {
+                    UnauthorizedAccessException =>
+                        (int)HttpStatusCode.Forbidden,
+
                     KeyNotFoundException =>
                         (int)HttpStatusCode.NotFound,
 

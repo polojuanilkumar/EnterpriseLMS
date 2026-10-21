@@ -1,0 +1,8 @@
+@model CurrentCourseProgress
+<p>Current published-content progress: @Model.CompletedLessons / @Model.TotalLessons lessons completed (@Model.ProgressPercentage%).</p>
+<p>Historical enrollment status: @(Model.EnrollmentStatus==2?"Completed":"Active"). Historical enrollment completed at: @(Model.EnrollmentCompletedAt?.ToString("u")??"Not recorded").</p>
+@if(Model.EnrollmentStatus==2){<p>Historical completion is retained even if the currently published lessons change. Progress reads remain available; mutations require Active enrollment.</p>}
+else if(Model.TotalLessons==0){<p>Not eligible for enrollment completion: at least one published lesson is required. Current progress is 0%.</p>}
+else if(!Model.CanComplete){<p>Not eligible for enrollment completion: complete every published lesson first.</p>}
+else {<p>Eligible to request enrollment completion. The server rechecks the prerequisites when you confirm.</p>}
+<p>Quiz passing and required content items are not course completion prerequisites.</p>

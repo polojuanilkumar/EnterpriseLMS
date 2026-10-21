@@ -1,4 +1,4 @@
-﻿using LMS.Application.Common.Models;
+using LMS.Application.Common.Models;
 using LMS.Application.Features.CourseProgress.Common;
 using LMS.Application.Features.CourseProgress.GetProgress;
 using LMS.Application.Features.Courses.ArchiveCourse;
@@ -17,6 +17,7 @@ namespace LMS.Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
+    [LMS.Api.Middleware.OrganizationScope]
     public sealed class CoursesController : ControllerBase
     {
         private readonly CreateCourseHandler _createCourseHandler;
@@ -105,7 +106,7 @@ namespace LMS.Api.Controllers
 
 
         [HttpGet]
-        [AllowAnonymous]
+
         public async Task<IActionResult> GetCourses(
     CancellationToken cancellationToken)
         {
@@ -123,7 +124,7 @@ namespace LMS.Api.Controllers
 
 
         [HttpGet("{id:guid}")]
-        [AllowAnonymous]
+
         public async Task<IActionResult> GetCourseById(
     Guid id,
     CancellationToken cancellationToken)

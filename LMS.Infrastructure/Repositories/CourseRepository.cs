@@ -21,6 +21,7 @@ namespace LMS.Infrastructure.Repositories
             Course course,
             CancellationToken cancellationToken = default)
         {
+            course.AssignOrganization(_context.CurrentOrganizationId);
             await _context.Courses.AddAsync(
                 course,
                 cancellationToken);
@@ -31,6 +32,8 @@ namespace LMS.Infrastructure.Repositories
             CancellationToken cancellationToken = default)
         {
             return await _context.Courses
+                .Where(x => _context.CanManageContent || x.IsPublished)
+                .Where(x => !_context.RestrictToAssignedCourses || x.InstructorId == _context.CurrentUserId)
                  .Include(x => x.Category)
                 .FirstOrDefaultAsync(
                     x => x.Id == id,
@@ -52,6 +55,8 @@ namespace LMS.Infrastructure.Repositories
         {
             return await _context.Courses
                 .AsNoTracking()
+                .Where(x => _context.CanManageContent || x.IsPublished)
+                .Where(x => !_context.RestrictToAssignedCourses || x.InstructorId == _context.CurrentUserId)
                 .Include(x => x.Category)
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync(cancellationToken);

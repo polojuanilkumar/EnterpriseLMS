@@ -1,4 +1,4 @@
-﻿using LMS.Application.Features.Categories.ActivateCategory;
+using LMS.Application.Features.Categories.ActivateCategory;
 using LMS.Application.Features.Categories.CreateCategory;
 using LMS.Application.Features.Categories.DeactivateCategory;
 using LMS.Application.Features.Categories.GetCategories;
@@ -36,7 +36,7 @@ namespace LMS.Api.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin,SuperAdmin")]
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Create(
             [FromBody] CreateCategoryRequest request,
             CancellationToken cancellationToken)
@@ -128,7 +128,7 @@ namespace LMS.Api.Controllers
 
 
         [HttpPut("{id:guid}")]
-        [Authorize(Roles = "Admin,SuperAdmin")]
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Update(
     Guid id,
     [FromBody] UpdateCategoryRequest request,
@@ -176,7 +176,7 @@ namespace LMS.Api.Controllers
         }
 
         [HttpPatch("{id:guid}/activate")]
-        [Authorize(Roles = "Admin,SuperAdmin")]
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Activate(
             Guid id,
             CancellationToken cancellationToken)
@@ -211,7 +211,7 @@ namespace LMS.Api.Controllers
             }
         }
         [HttpPatch("{id:guid}/deactivate")]
-        [Authorize(Roles = "Admin,SuperAdmin")]
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Deactivate(
             Guid id,
             CancellationToken cancellationToken)

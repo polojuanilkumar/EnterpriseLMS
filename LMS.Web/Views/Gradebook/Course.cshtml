@@ -1,0 +1,39 @@
+@model CourseGradesPage
+@{ViewData["Title"]="Course assessments";var c=Model.Course;var q=Model.Quizzes;var a=Model.Assignments;}
+<h1>@c.Title — your assessments</h1><p><a href="/learn/@Model.OrganizationId/grades">My grades</a></p>
+<p>Enrollment: @ReportText.Enrollment(c.EnrollmentStatus). Historical enrollment completed at: @ReportText.Utc(c.EnrollmentCompletedAt). Stored enrollment percentage: @c.StoredEnrollmentPercentage%.</p>
+<p>Current published-content progress: @c.CompletedPublishedLessons / @c.PublishedLessons (@c.CurrentPercentage%). This is separate from assessment grades.</p>
+<form method="get">
+    <label for="quizStatus">Quiz state</label><select id="quizStatus" name="quizStatus"><option value="">All</option>@foreach(var item in new[]{(0,"Not attempted"),(1,"Started"),(2,"Submitted"),(3,"Expired")}){<option value="@item.Item1" selected="@(Model.QuizStatus==item.Item1)">@item.Item2</option>}</select>
+    <label for="assignmentStatus">Assignment state</label><select id="assignmentStatus" name="assignmentStatus"><option value="">All</option>@foreach(var item in new[]{(0,"Not submitted"),(1,"Ungraded"),(2,"Graded")}){<option value="@item.Item1" selected="@(Model.AssignmentStatus==item.Item1)">@item.Item2</option>}</select>
+    <label for="pageSize">Rows per section (1–50)</label><input id="pageSize" type="number" name="pageSize" min="1" max="50" value="@q.PageSize" /><button type="submit">Apply filters</button>
+</form>
+<h2>Quiz attempts</h2><p>@q.Total matching rows · Page @q.Page / @q.Pages</p>
+@if(q.Items.Length==0){<p>No accessible quiz attempts or unattempted published quizzes on this page.</p>}
+@foreach(var row in q.Items)
+{
+    <section class="lesson-item"><h3>@row.Title @(row.AttemptNumber.HasValue?$"— attempt {row.AttemptNumber}":"")</h3><p>@ReportText.Quiz(row)</p>
+    @if(row.AttemptId.HasValue){<p>Started: @ReportText.Utc(row.StartedAt) · Submitted: @ReportText.Utc(row.SubmittedAt) · Deadline: @ReportText.Utc(row.Deadline)</p>}
+    @if(row.ResultAvailable){<p>Score: @row.EarnedMarks / @row.PossibleMarks · @(row.Passed==true?"Passed":"Did not pass") · Passing percentage snapshot: @row.PassingPercentageSnapshot%</p>}
+    else if(row.Status==3){<p>No submitted result for this expired attempt.</p>}
+    @if(row.DetailAvailable){<a href="/learn/@Model.OrganizationId/courses/@c.CourseId/sections/@row.SectionId/units/@row.LessonId/quiz@(row.AttemptId.HasValue?$"/attempts/{row.AttemptId}":"")">Open existing quiz page</a>}
+    else{<p>Detailed quiz page is unavailable while its course, lesson or quiz is unpublished. Stored outcomes above remain unchanged.</p>}
+    </section>
+}
+@if(q.Page>1){<a href="@Model.Link(q.Page-1,a.Page)">Previous quiz page</a>}
+@if(q.Page<q.Pages){<a href="@Model.Link(q.Page+1,a.Page)">Next quiz page</a>}
+<h2>Assignments</h2><p>@a.Total matching assignments · Page @a.Page / @a.Pages</p>
+@if(a.Items.Length==0){<p>No accessible assignments on this page.</p>}
+@foreach(var row in a.Items)
+{
+    var root=$"/learn/{Model.OrganizationId}/courses/{c.CourseId}/sections/{row.SectionId}/units/{row.LessonId}/assignments/{row.AssignmentId}";
+    <section class="lesson-item"><h3>@row.Title</h3><p>@ReportText.Assignment(row.Status) · @(row.Published?"Published":"Historical unpublished work")</p>
+    <p>Maximum marks @(row.SubmissionId.HasValue?"at submission":"(current definition)"): @row.MaximumMarks</p>
+    @if(row.SubmissionId.HasValue){<p>Submitted: @ReportText.Utc(row.SubmittedAt)</p><a href="@root/submissions/@row.SubmissionId">Open your existing submission review</a>}
+    else{<a href="@root">Open assignment instructions</a>}
+    @if(row.Status==2){<p>Grade: @row.Marks / @row.MaximumMarks · Graded: @ReportText.Utc(row.GradedAt)</p><div class="lesson-text">@row.Feedback</div>}
+    </section>
+}
+@if(a.Page>1){<a href="@Model.Link(q.Page,a.Page-1)">Previous assignment page</a>}
+@if(a.Page<a.Pages){<a href="@Model.Link(q.Page,a.Page+1)">Next assignment page</a>}
+<p>Each quiz attempt is listed separately. No best/latest attempt is chosen as an official grade, and no overall course grade is calculated. Assessment titles are current metadata; recorded marks and thresholds use historical snapshots. Reads do not expire attempts or change progress. Counts and pages may differ during concurrent changes.</p>

@@ -480,3 +480,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Private development media (never publish or commit uploaded bytes)
+LMS.Api/App_Data/PrivateMedia/
+LMS.Api/App_Data/PrivateEmails/
+LMS.Api/App_Data/PrivateAssignments/

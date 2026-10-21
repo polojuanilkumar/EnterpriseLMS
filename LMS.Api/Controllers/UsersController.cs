@@ -1,4 +1,4 @@
-﻿using LMS.Application.Common.Models;
+using LMS.Application.Common.Models;
 using LMS.Application.DTOs.Users;
 using LMS.Application.Features.Users.Commands.RegisterUser;
 using LMS.Application.Features.Users.Profile;
@@ -32,59 +32,8 @@ namespace LMS.Api.Controllers
         // ============================================
         // POST: api/Users/register
         // ============================================
-        [HttpPost("register")]
-        [AllowAnonymous]
-        public async Task<IActionResult> Register(
-            [FromBody] RegisterUserRequest request,
-            CancellationToken cancellationToken)
-        {
-            var validator = new RegisterUserValidator();
-
-            var validationResult =
-                await validator.ValidateAsync(
-                    request,
-                    cancellationToken);
-
-            //if (!validationResult.IsValid)
-            //{
-            //    return BadRequest(
-            //        validationResult.Errors.Select(x => new
-            //        {
-            //            Field = x.PropertyName,
-            //            Message = x.ErrorMessage
-            //        }));
-            //}
-
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors
-                    .Select(x => new
-                    {
-                        Field = x.PropertyName,
-                        Message = x.ErrorMessage
-                    })
-                    .ToList();
-
-                return BadRequest(
-                    ApiResponse<object>.Fail(
-                        "Validation failed.",
-                        errors));
-            }
-
-            var result =
-                await _registerUserHandler.HandleAsync(
-                    request,
-                    cancellationToken);
-
-            return Ok(
-     ApiResponse<RegisterUserResponse>.Ok(
-         result,
-         "User registered successfully."));
-        }
-
-
-
-
+        [HttpPost("register"), AllowAnonymous]
+        public IActionResult Register() => StatusCode(403, new { Message = "Registration requires an organization invitation." });
         // ============================================
         // GET: api/Users/me
         // ============================================

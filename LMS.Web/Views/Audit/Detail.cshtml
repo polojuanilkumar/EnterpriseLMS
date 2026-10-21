@@ -1,0 +1,8 @@
+@model AuditViewRow
+@{ViewData["Title"]="Audit event";}
+<h1>Audit event</h1>
+<dl><dt>Event ID</dt><dd>@Model.Id</dd><dt>Timestamp UTC</dt><dd>@Model.TimestampUtc.ToString("u")</dd>
+<dt>Scope</dt><dd>@Model.Scope @Model.OrganizationId</dd><dt>Action</dt><dd>@Model.Action</dd>
+<dt>Actor ID</dt><dd>@(Model.ActorUserId?.ToString()??"Unavailable / anonymous")</dd><dt>Resource</dt><dd>@Model.ResourceType @Model.ResourceId</dd>
+<dt>Outcome</dt><dd>@Model.Outcome</dd><dt>Correlation ID</dt><dd>@Model.CorrelationId</dd><dt>Approved metadata</dt><dd>@Model.Metadata</dd></dl>
+<a href="@ViewBag.BasePath">Back to history</a>

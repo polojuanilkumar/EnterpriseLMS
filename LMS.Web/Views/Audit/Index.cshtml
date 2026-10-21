@@ -1,0 +1,23 @@
+@using LMS.Web.Services
+@model AuditViewPage
+@{ViewData["Title"]="Audit history";var f=Model.Filter;string basePath=ViewBag.BasePath;}
+<h1>Audit history</h1>
+<p>@(Model.OrganizationId.HasValue?"Selected organization: "+Model.OrganizationId:"Platform and account events only. Select an organization to view its history.")</p>
+<form action="@basePath" method="get">
+<p>UTC dates use ISO 8601, for example 2026-10-01T00:00:00Z. Maximum range: 31 days. End is exclusive.</p>
+<label>From UTC <input name="FromUtc" value="@f.FromUtc?.ToString("O")" /></label>
+<label>To UTC <input name="ToUtc" value="@f.ToUtc?.ToString("O")" /></label>
+<label>Action <select name="Action"><option value="">All actions</option>@foreach(var action in AuditDisplay.Actions){<option value="@action" selected="@(f.Action==action)">@action</option>}</select></label>
+<label>Outcome <select name="Outcome"><option value="">All outcomes</option>@foreach(var outcome in AuditDisplay.Outcomes){<option value="@outcome" selected="@(f.Outcome==outcome)">@outcome</option>}</select></label>
+<label>Actor ID <input name="ActorId" value="@f.ActorId"/></label><label>Resource ID <input name="ResourceId" value="@f.ResourceId"/></label>
+<label>Page size <input name="PageSize" type="number" min="1" max="50" value="@Model.PageSize"/></label><button type="submit">Filter history</button>
+</form>
+@if(Model.Items.Length==0){<p>No audit events match these filters in this scope.</p>}
+else{
+<table><thead><tr><th>Timestamp UTC</th><th>Action</th><th>Actor ID</th><th>Resource</th><th>Outcome</th><th>Approved metadata</th></tr></thead><tbody>
+@foreach(var row in Model.Items){<tr><td>@row.TimestampUtc.ToString("u")</td><td><a href="@basePath/@row.Id">@row.Action</a></td><td>@(row.ActorUserId?.ToString()??"Unavailable / anonymous")</td><td>@row.ResourceType @row.ResourceId</td><td>@row.Outcome</td><td>@row.Metadata</td></tr>}
+</tbody></table>}
+<p>Page @Model.Page; @Model.Total matching events</p>
+@if(Model.Page>1){<a href="@LearnerApi.AuditQuery(basePath,new AuditViewFilter {Page=Model.Page-1,PageSize=Model.PageSize,FromUtc=f.FromUtc,ToUtc=f.ToUtc,Action=f.Action,Outcome=f.Outcome,ActorId=f.ActorId,ResourceId=f.ResourceId})">Previous</a>}
+@if(Model.Page<10000&&(long)Model.Page*Model.PageSize<Model.Total){<a href="@LearnerApi.AuditQuery(basePath,new AuditViewFilter {Page=Model.Page+1,PageSize=Model.PageSize,FromUtc=f.FromUtc,ToUtc=f.ToUtc,Action=f.Action,Outcome=f.Outcome,ActorId=f.ActorId,ResourceId=f.ResourceId})">Next</a>}
+<p><a href="/account/organizations">Select an organization</a></p>

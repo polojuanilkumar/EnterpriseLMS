@@ -1,0 +1,19 @@
+@model StaffLearnersReportPage
+@{ViewData["Title"]="Learner report";ViewData["LearnerFilter"]=true;var c=Model.Report.Course;var p=Model.Report.Learners;var root=$"/staff/{Model.OrganizationId}/reports/courses/{c.CourseId}/learners";}
+<h1>@c.Title — learner report</h1><p><a href="/staff/@Model.OrganizationId/reports/courses">Course reports</a> | <a href="/staff/@Model.OrganizationId/courses/@c.CourseId">Open course to review assignments through its lessons</a></p>
+@await Html.PartialAsync("/Views/Reports/_Filters.cshtml",Model.Filter)
+<p>@p.Total matching enrollments · Page @p.Page / @p.Pages</p>
+@if(p.Items.Length==0){<p>No matching learners on this page.</p>}
+@foreach(var l in p.Items)
+{
+    <section class="lesson-item"><h2>@l.FirstName @l.LastName</h2><p>Learner ID: @l.UserId · Enrollment: @ReportText.Enrollment(l.EnrollmentStatus)</p>
+    <p>Enrolled: @ReportText.Utc(l.EnrolledAt). Historical enrollment completed at: @ReportText.Utc(l.EnrollmentCompletedAt). Stored enrollment percentage: @l.StoredEnrollmentPercentage%.</p>
+    <p>Current published-content progress: @l.CompletedPublishedLessons / @l.PublishedLessons (@l.CurrentPercentage%). @(l.CurrentContentComplete?"Current published lessons complete.":"Current prerequisites incomplete; zero lessons is not complete.")</p>
+    <p>Quiz attempts: Started @l.QuizStarted, Submitted @l.QuizSubmitted, Expired @l.QuizExpired. Passed @l.QuizPassed, Failed @l.QuizFailed, Unavailable @l.QuizUnavailable.</p>
+    <p>Assignment submissions: @l.Submissions · Graded @l.Graded · Ungraded @l.Ungraded</p>
+    @if(l.RecentAssignmentReview is {} review){<p><a href="/staff/@Model.OrganizationId/courses/@review.CourseId/sections/@review.SectionId/lessons/@review.LessonId/assignments/@review.AssignmentId/submissions/@review.SubmissionId">Review this learner's most recent assignment submission</a> (navigation only, not an official course grade)</p>}
+    </section>
+}
+@if(p.Page>1){<a href="@(root+Model.Filter.Query(p.Page-1))">Previous</a>}
+@if(p.Page<p.Pages){<a href="@(root+Model.Filter.Query(p.Page+1))">Next</a>}
+<p>Historical enrollment completion is independent of current progress and grades. Assessment counts include unpublished historical work; detailed quiz results remain owner-only. Separate reads are not an atomic snapshot.</p>

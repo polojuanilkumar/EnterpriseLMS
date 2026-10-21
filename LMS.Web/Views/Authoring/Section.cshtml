@@ -1,0 +1,11 @@
+@model SectionEditor
+<h1>@(Model.SectionId.HasValue ? "Edit section" : "Create section")</h1>
+<form method="post">
+@Html.AntiForgeryToken()
+<div asp-validation-summary="All"></div>
+<p><label asp-for="Form.Title"></label><input asp-for="Form.Title" /></p>
+<p><label asp-for="Form.Description"></label><textarea asp-for="Form.Description"></textarea></p>
+<p><label asp-for="Form.DisplayOrder">Display order</label><input asp-for="Form.DisplayOrder" min="1" /></p>
+<button type="submit">Save section</button>
+</form>
+<a href="/staff/@Model.OrganizationId/courses/@Model.CourseId">Course</a>

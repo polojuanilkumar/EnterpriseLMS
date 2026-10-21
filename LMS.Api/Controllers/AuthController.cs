@@ -15,7 +15,7 @@ namespace LMS.Api.Controllers
             _loginHandler = loginHandler;
         }
 
-        [HttpPost("login")]
+        [HttpPost("login"), Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("organization-administration")]
         public async Task<IActionResult> Login(
             [FromBody] LoginRequest request)
         {

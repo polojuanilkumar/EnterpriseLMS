@@ -1,0 +1,22 @@
+@model (QuizEditorPage Page, QuestionView? Question)
+@{var root=$"/staff/{Model.Page.Unit.OrganizationId}/courses/{Model.Page.Unit.CourseId}/sections/{Model.Page.Unit.SectionId}/lessons/{Model.Page.Unit.Lesson.Id}/quiz/change";
+var q=Model.Question;
+var pending=ViewData["ActionName"] as string=="question" && (Guid?)ViewData["QuestionId"]==q?.Id;
+var form=pending ? ViewData["PendingQuestion"] as QuestionForm:null;
+form??=q is null?new(){DisplayOrder=(int)Math.Min(int.MaxValue,1L+Model.Page.Questions.Select(x=>x.Question.DisplayOrder).DefaultIfEmpty(0).Max())}:new(){QuestionText=q.QuestionText,QuestionType=q.QuestionType,DisplayOrder=q.DisplayOrder,Marks=q.Marks};
+var order=pending&&ViewData.ModelState.TryGetValue("question.DisplayOrder",out var orderState)?orderState.AttemptedValue:form.DisplayOrder.ToString();
+var marks=pending&&ViewData.ModelState.TryGetValue("question.Marks",out var marksState)?marksState.AttemptedValue:form.Marks.ToString(System.Globalization.CultureInfo.InvariantCulture);}
+<form method="post" action="@root">
+@Html.AntiForgeryToken()
+<input type="hidden" name="actionName" value="question" /><input type="hidden" name="questionId" value="@q?.Id" />
+<label>Question <textarea name="question.QuestionText" required>@form.QuestionText</textarea></label>
+<label>Type <select name="question.QuestionType">
+@foreach(var type in new[]{(1,"SingleChoice"),(2,"MultipleChoice"),(3,"TrueFalse")}) {<option value="@type.Item1" selected="@(form.QuestionType==type.Item1)">@type.Item2</option>}
+</select></label>
+<label>Order <input type="number" name="question.DisplayOrder" value="@order" min="1" /></label>
+<label>Marks <input type="number" step="any" name="question.Marks" value="@marks" /></label>
+<button type="submit">Save question</button>
+</form>
+@if(q is not null){
+<form method="post" action="@root">@Html.AntiForgeryToken()<input type="hidden" name="actionName" value="delete" /><input type="hidden" name="questionId" value="@q.Id" /><label><input type="checkbox" name="confirmed" value="true" required /> Confirm deletion of this question and its options</label><button type="submit">Delete question</button></form>
+}

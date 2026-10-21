@@ -13,6 +13,7 @@ namespace LMS.Api.Controllers
     [ApiController]
     [Route("api/Quizzes/{quizId:guid}/attempts")]
     [Authorize(Roles = "Student")]
+    [LMS.Api.Middleware.OrganizationScope]
     public sealed class QuizAttemptsController : ControllerBase
     {
         private readonly StartQuizAttemptHandler _startHandler;

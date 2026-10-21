@@ -1,0 +1,9 @@
+@model WebInvitationPage
+<h1>Organization invitations</h1><p>@TempData["InvitationMessage"]</p>
+<p><a href="/organizations/@ViewBag.OrganizationId/invitations/create">Create or reissue invitation</a></p>
+<table><thead><tr><th>Email</th><th>Role</th><th>Expires (UTC)</th><th>Status</th><th>Delivery recorded</th><th>Action</th></tr></thead><tbody>
+@foreach(var i in Model.Items){<tr><td>@i.Email</td><td>@(i.Role==1?"Student":i.Role==2?"Instructor":"Admin")</td><td>@i.ExpiresAt.ToString("u")</td><td>@(i.AcceptedAt.HasValue?"Accepted":i.RevokedAt.HasValue?"Revoked":i.ExpiresAt<=DateTimeOffset.UtcNow?"Expired":"Pending")</td><td>@(i.DeliveredAt.HasValue?"Yes":"Unconfirmed")</td><td><a href="/organizations/@ViewBag.OrganizationId/invitations/@i.Id/revoke">Review revocation</a></td></tr>}
+</tbody></table><p>Page @Model.Page; @Model.Total invitations</p>
+@if(Model.Page>1){<a href="?page=@(Model.Page-1)">Previous</a>}
+@if((long)Model.Page*Model.PageSize<Model.Total){<a href="?page=@(Model.Page+1)">Next</a>}
+<a href="/admin/@ViewBag.OrganizationId">Organization administration</a>

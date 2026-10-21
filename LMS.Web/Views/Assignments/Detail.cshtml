@@ -1,0 +1,34 @@
+@model AssignmentPage
+@{var a=Model.Assignment!;var target=Model.Root+"/"+a.Id;ViewData["Title"]=a.Title;}
+<p><a href="@Model.Root">Assignments</a></p><h1>@a.Title</h1>
+<div asp-validation-summary="All"></div>
+<div class="lesson-text">@a.Instructions</div>
+<p>Maximum marks: @a.MaximumMarks · @(a.IsPublished?"Published":"Unpublished")</p>
+<p>Due (UTC): @(a.DueAtUtc?.ToString("yyyy-MM-dd HH:mm:ss 'UTC'")??"No due date")</p>
+@if(Model.Staff)
+{
+    <p><a href="@target/edit">Edit assignment</a></p>
+    <form method="post" action="@target/publication">
+        @Html.AntiForgeryToken()<input type="hidden" name="published" value="@((!a.IsPublished).ToString().ToLowerInvariant())" />
+        <label><input type="checkbox" name="confirmed" value="true" required /> Confirm @(a.IsPublished?"unpublishing (new submissions will be blocked)":"publication")</label>
+        <button type="submit">@(a.IsPublished?"Unpublish":"Publish")</button>
+    </form>
+}
+<h2>@(Model.Staff?"Submissions":"Your submission")</h2>
+@foreach(var s in Model.Submissions)
+{<p><a href="@target/submissions/@s.Id">Submitted @s.SubmittedAt.ToString("yyyy-MM-dd HH:mm:ss 'UTC'") — @(s.Grade is null?"Awaiting grading":"Graded")</a>@if(Model.Staff){<span> · Student @s.UserId</span>}</p>}
+@if(Model.CanSubmit)
+{
+    <p>One final submission only. Text, one PDF (25 MiB maximum), or both. There are no drafts or resubmissions. Server time controls the deadline.</p>
+    <form method="post" action="@target/submit" enctype="multipart/form-data" data-assignment-final>
+        @Html.AntiForgeryToken()
+        <label asp-for="SubmissionForm.Text">Your plain-text work</label><textarea asp-for="SubmissionForm.Text" maxlength="100000"></textarea>
+        <label asp-for="SubmissionForm.File">Optional PDF</label><input asp-for="SubmissionForm.File" type="file" accept="application/pdf,.pdf" />
+        <p>After a validation error, select the file again. Text is retained safely.</p>
+        <label><input asp-for="SubmissionForm.Confirmed" required /> I confirm this is my final submission and cannot be replaced.</label>
+        <button type="submit">Submit final work</button>
+    </form>
+}
+else if(!Model.Staff&&Model.Submissions.Length==0){<p>New submissions are unavailable. They require Active enrollment and published course, lesson and assignment.</p>}
+<p>Assignment grades do not affect lesson or course completion.</p>
+<script src="~/js/assignments.js" asp-append-version="true" defer></script>

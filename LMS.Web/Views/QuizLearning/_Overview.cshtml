@@ -1,0 +1,17 @@
+@model LearnerQuizPage
+@{var root=$"/learn/{Model.Unit.OrganizationId}/courses/{Model.Unit.CourseId}/sections/{Model.Unit.SectionId}/units/{Model.Unit.Lesson.Id}/quiz";}
+@if(Model.Quiz is null){<p>No published quiz is available for this lesson.</p>}
+else
+{
+    <h3>@Model.Quiz.Title</h3><p>@Model.Quiz.Description</p>
+    <p>Passing percentage: @Model.Quiz.PassingPercentage%. Time limit: @Model.Quiz.TimeLimitInMinutes minutes. Maximum attempts: @Model.Quiz.MaxAttempts. Attempts recorded: @Model.Attempts.Length. Remaining: @Math.Max(0,Model.Quiz.MaxAttempts-Model.Attempts.Length).</p>
+    <p>@(Model.Active?"Active enrollment: the server checks eligibility when starting and submitting.":"Completed enrollment: history and results remain available; starting and submitting require Active enrollment.")</p>
+    <p>Starting begins the server timer. Answers are submitted together and are not saved automatically. Passing this quiz is not a course completion requirement.</p>
+    <h3>Attempt history</h3>
+    @foreach(var attempt in Model.Attempts)
+    {
+        <p>Attempt @attempt.AttemptNumber — @(attempt.Status switch {1=>"In progress (server checks expiration)",2=>"Submitted",_=>"Expired"}) — Deadline @attempt.Deadline.ToString("u")
+        @if(attempt.Status==2){<span>Marks: @attempt.EarnedMarks / @attempt.PossibleMarks. @(attempt.IsPassed==true?"Passed":"Not passed").</span>}
+        <a href="@root/attempts/@attempt.AttemptId">@(attempt.Status==1?"Resume / check status":attempt.Status==2?"View result and selected answers":"View expired status")</a></p>
+    }
+}

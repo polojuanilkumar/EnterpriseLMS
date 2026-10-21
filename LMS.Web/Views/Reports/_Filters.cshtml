@@ -1,0 +1,8 @@
+@model ReportFilterView
+<form method="get">
+    <label for="search">Search @(ViewData["LearnerFilter"] as bool?==true?"learner first/last name":"course title")</label><input id="search" name="search" value="@Model.Search" maxlength="100" />
+    <label for="published">Course publication</label><select id="published" name="published"><option value="">All</option><option value="true" selected="@(Model.Published==true)">Published</option><option value="false" selected="@(Model.Published==false)">Unpublished</option></select>
+    <label for="enrollmentStatus">Enrollment</label><select id="enrollmentStatus" name="enrollmentStatus"><option value="">All</option><option value="1" selected="@(Model.EnrollmentStatus==1)">Active</option><option value="2" selected="@(Model.EnrollmentStatus==2)">Completed</option>@if(ViewData["GradebookFilter"] as bool?!=true){<option value="3" selected="@(Model.EnrollmentStatus==3)">Cancelled</option>}</select>
+    <label for="pageSize">Rows per page (1–50)</label><input id="pageSize" name="pageSize" type="number" min="1" max="50" value="@Model.PageSize" />
+    <button type="submit">Apply filters</button>
+</form>

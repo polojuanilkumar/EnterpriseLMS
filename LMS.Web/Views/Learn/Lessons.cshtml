@@ -1,0 +1,12 @@
+@model LessonsPage
+@{ ViewData["Title"]=Model.Section.Title; }
+<a href="/learn/@Model.OrganizationId/courses/@Model.Course.Id">@Model.Course.Title</a>
+<h1>@Model.Section.Title</h1>
+<h2>Units</h2>
+@if(Model.Lessons.Length==0) { <p>No published units are available.</p> }
+<ol>
+@foreach(var lesson in Model.Lessons)
+{
+    <li><a href="/learn/@Model.OrganizationId/courses/@Model.Course.Id/sections/@Model.Section.Id/units/@lesson.Id">@lesson.Title</a></li>
+}
+</ol>

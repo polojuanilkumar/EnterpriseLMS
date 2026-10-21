@@ -1,0 +1,37 @@
+﻿@model MembersPage
+@using Microsoft.AspNetCore.WebUtilities
+@{ViewData["Title"]="Organization memberships";var form=Model.Form??new MemberForm {Role=1};
+    string PageLink(int page)=>QueryHelpers.AddQueryString($"/admin/{Model.OrganizationId}/members",new Dictionary<string,string?> {
+        ["page"]=page.ToString(),["pageSize"]=Model.PageSize.ToString(),["search"]=Model.Search,["role"]=Model.Role?.ToString()});}
+<a href="/admin/@Model.OrganizationId">Administration</a><h1>Memberships</h1>
+@if(TempData["MemberNotice"] is string notice){<p role="status">@notice</p>}
+<div asp-validation-summary="All" role="alert"></div>
+<form method="get" action="/admin/@Model.OrganizationId/members">
+<label for="search">Name or email within this organization</label><input id="search" name="search" value="@Model.Search" maxlength="100" />
+<label for="roleFilter">Role</label><select id="roleFilter" name="role"><option value="">All roles</option>
+@foreach(var pair in new[]{(1,"Student"),(2,"Instructor"),(3,"Admin")}){<option value="@pair.Item1" selected="@(Model.Role==pair.Item1)">@pair.Item2</option>}
+</select><label for="pageSize">Page size (1–50)</label><input id="pageSize" type="number" min="1" max="50" name="pageSize" value="@Model.PageSize" /><button>Filter</button></form>
+<p>@Model.Total matching members. Page @Model.Page.</p>
+@if(Model.Members.Length==0){<p>No matching members on this page.</p>}
+<table class="table"><thead><tr><th>Member</th><th>Email</th><th>Role</th><th>Change role</th></tr></thead><tbody>
+@foreach(var member in Model.Members) {
+<tr><td>@member.FirstName @member.LastName</td><td>@member.Email</td><td>@(member.Role==1?"Student":member.Role==2?"Instructor":"Admin")</td><td>
+<form action="/admin/@Model.OrganizationId/members" method="post">@Html.AntiForgeryToken()
+<input type="hidden" name="UserId" value="@member.UserId" />
+<input type="hidden" name="Page" value="@Model.Page" /><input type="hidden" name="PageSize" value="@Model.PageSize" /><input type="hidden" name="Search" value="@Model.Search" /><input type="hidden" name="FilterRole" value="@Model.Role" />
+<label for="role-@member.UserId">New role for @member.Email</label><select id="role-@member.UserId" name="Role">
+@foreach(var pair in new[]{(1,"Student"),(2,"Instructor"),(3,"Admin")}){<option value="@pair.Item1" selected="@((form.UserId==member.UserId?form.Role:member.Role)==pair.Item1)">@pair.Item2</option>}
+</select><label><input type="checkbox" name="Confirmed" value="true" required /> I confirm this member's role change.</label><button>Save role</button></form>
+</td></tr> }
+</tbody></table>
+@if(Model.Page>1){<a href="@PageLink(Model.Page-1)">Previous</a>}
+@if((long)Model.Page*Model.PageSize<Model.Total && Model.Page<10000){<a href="@PageLink(Model.Page+1)">Next</a>}
+<h2>Add an existing user</h2><p>Enter the exact email of an existing account. No global account directory is available. Roles apply only to this selected organization; platform SuperAdmin cannot be assigned here.</p>
+<p>The last Admin cannot be demoted. Reassign an Instructor's courses and resolve a Student's Active enrollments before changing their role. Your own Admin membership cannot be demoted here.</p>
+<form action="/admin/@Model.OrganizationId/members" method="post">@Html.AntiForgeryToken()
+<p><label for="Email">Existing account email</label><input id="Email" name="Email" type="email" value="@(form.UserId==Guid.Empty?form.Email:"")" maxlength="256" required /></p>
+<input type="hidden" name="Page" value="@Model.Page" /><input type="hidden" name="PageSize" value="@Model.PageSize" /><input type="hidden" name="Search" value="@Model.Search" /><input type="hidden" name="FilterRole" value="@Model.Role" />
+<p><label for="Role">Role</label><select id="Role" name="Role">
+@foreach(var pair in new[]{(1,"Student"),(2,"Instructor"),(3,"Admin")}){<option value="@pair.Item1" selected="@((form.UserId==Guid.Empty?form.Role:1)==pair.Item1)">@pair.Item2</option>}
+</select></p><label><input type="checkbox" name="Confirmed" value="true" required /> I confirm adding this account to this organization with the selected role.</label>
+<button type="submit">Add member</button></form>

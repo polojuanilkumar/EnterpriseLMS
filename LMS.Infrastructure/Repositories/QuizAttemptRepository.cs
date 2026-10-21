@@ -16,6 +16,8 @@ namespace LMS.Infrastructure.Repositories
         public async Task<T> ExecuteTransactionAsync<T>(Guid quizId,
             Func<CancellationToken, Task<T>> action, CancellationToken cancellationToken = default)
         {
+            if (!await _context.Quizzes.AnyAsync(x => x.Id == quizId, cancellationToken))
+                throw new KeyNotFoundException("Quiz not found.");
             try
             {
                 await using var transaction = await _context.Database.BeginTransactionAsync(
@@ -57,6 +59,10 @@ namespace LMS.Infrastructure.Repositories
             Func<IReadOnlyList<Guid>, CancellationToken, Task<T>> action,
             CancellationToken cancellationToken = default)
         {
+            var visible = isSection
+                ? await _context.CourseSections.AnyAsync(x => x.Id == parentId, cancellationToken)
+                : await _context.Lessons.AnyAsync(x => x.Id == parentId, cancellationToken);
+            if (!visible) throw new KeyNotFoundException("Parent resource not found.");
             try
             {
                 await using var transaction = await _context.Database.BeginTransactionAsync(
@@ -70,8 +76,8 @@ namespace LMS.Infrastructure.Repositories
                         $"SELECT * FROM [CourseSections] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {parentId}")
                         .AsNoTracking().ToListAsync(cancellationToken);
                     quizzes = await _context.Quizzes.FromSqlInterpolated(
-                        $"SELECT q.* FROM [Quizzes] q WITH (UPDLOCK, HOLDLOCK) WHERE q.[LessonId] IN (SELECT [Id] FROM [Lessons] WITH (HOLDLOCK) WHERE [SectionId] = {parentId}) ORDER BY q.[Id]")
-                        .AsNoTracking().ToListAsync(cancellationToken);
+                        $"SELECT q.* FROM [Quizzes] q WITH (UPDLOCK, HOLDLOCK) WHERE q.[LessonId] IN (SELECT [Id] FROM [Lessons] WITH (HOLDLOCK) WHERE [SectionId] = {parentId})")
+                        .AsNoTracking().OrderBy(x => x.Id).ToListAsync(cancellationToken);
                 }
                 else
                 {
@@ -79,8 +85,8 @@ namespace LMS.Infrastructure.Repositories
                         $"SELECT * FROM [Lessons] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {parentId}")
                         .AsNoTracking().ToListAsync(cancellationToken);
                     quizzes = await _context.Quizzes.FromSqlInterpolated(
-                        $"SELECT * FROM [Quizzes] WITH (UPDLOCK, HOLDLOCK) WHERE [LessonId] = {parentId} ORDER BY [Id]")
-                        .AsNoTracking().ToListAsync(cancellationToken);
+                        $"SELECT * FROM [Quizzes] WITH (UPDLOCK, HOLDLOCK) WHERE [LessonId] = {parentId}")
+                        .AsNoTracking().OrderBy(x => x.Id).ToListAsync(cancellationToken);
                 }
                 var result = await action(quizzes.Select(x => x.Id).ToList(), cancellationToken);
                 await transaction.CommitAsync(cancellationToken);

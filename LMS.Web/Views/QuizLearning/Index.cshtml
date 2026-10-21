@@ -1,0 +1,36 @@
+@model LearnerQuizPage
+@{var root=$"/learn/{Model.Unit.OrganizationId}/courses/{Model.Unit.CourseId}/sections/{Model.Unit.SectionId}/units/{Model.Unit.Lesson.Id}/quiz";ViewData["Title"]="Lesson quiz";var saved=ViewData["Answers"] as QuizSubmission;}
+<a href="@(root[..^5])">Back to lesson</a> | <a href="@root">Refresh history</a>
+<h1>@(Model.Quiz?.Title??"Lesson quiz")</h1>
+<div asp-validation-summary="All" role="alert"></div>
+@if(Model.Notice is not null){<p role="alert">@Model.Notice</p>}
+@await Html.PartialAsync("/Views/QuizLearning/_Overview.cshtml",Model)
+@if(Model.Quiz is not null)
+{
+    @if(Model.Active && Model.Notice is null && !Model.Attempts.Any(x=>x.Status==1&&x.Deadline.ToUniversalTime()>DateTime.UtcNow) && Model.Attempts.Length<Model.Quiz.MaxAttempts)
+    {
+        <form method="post" action="@root/start" data-quiz-submit>@Html.AntiForgeryToken()<p>Starting begins the server timer. Answers are submitted together and are not saved automatically.</p><button type="submit">Start attempt</button></form>
+    }
+    @if(Model.Attempt is {Status:1} current && Model.Questions.Length>0)
+    {
+        <p data-quiz-deadline="@current.Deadline.ToUniversalTime().ToString("O")" role="timer">Server deadline: @current.Deadline.ToString("u")</p>
+        <form method="post" action="@root/attempts/@current.AttemptId/submit" data-quiz-submit>
+        @Html.AntiForgeryToken()
+        @for(var i=0;i<Model.Questions.Length;i++)
+        {
+            var row=Model.Questions[i];var selected=saved?.Answers?.FirstOrDefault(x=>x is not null&&x.QuestionId==row.Question.Id)?.SelectedOptionIds;
+            <fieldset><legend>@row.Question.QuestionText (@row.Question.Marks marks)</legend>
+            <input type="hidden" name="Answers[@i].QuestionId" value="@row.Question.Id" />
+            @foreach(var option in row.Options){<label><input type="@(row.Question.QuestionType==2?"checkbox":"radio")" name="Answers[@i].SelectedOptionIds" value="@option.Id" checked="@(selected?.Contains(option.Id)==true)" /> @option.OptionText</label>}
+            </fieldset>
+        }
+        @if(Model.Active){<button type="submit">Submit answers</button>}
+        </form>
+    }
+    @if(Model.Result is {} result)
+    {
+        <h2>Result</h2><p>Marks: @result.EarnedMarks / @result.PossibleMarks. Passing percentage: @result.PassingPercentageSnapshot%. @(result.IsPassed switch {true=>"Passed",false=>"Not passed",_=>"No scored submission"})</p>
+        @foreach(var answer in Model.Review?.Answers??[]){<h3>@answer.QuestionText</h3>@foreach(var option in answer.SelectedOptions){<p>Selected: @option.OptionText</p>}}
+    }
+}
+@section Scripts {<script src="~/js/quiz.js" asp-append-version="true"></script>}

@@ -1,0 +1,10 @@
+@model OrganizationAccess
+@{ViewData["Title"]="Organization administration";}
+<h1>Organization administration</h1>
+<p><a href="/admin/@Model.OrganizationId/audit">Organization audit history</a></p>
+<p><a href="/organizations/@Model.OrganizationId/invitations">Organization invitations</a></p>
+@if(Model.IsSuperAdmin){<p><a href="/platform">Verified platform home</a> | <a href="/platform/organizations">Platform organizations</a></p>}
+<p><a href="/staff/@Model.OrganizationId/reports/courses">Course and learner reports</a></p>
+<p>Selected organization: @Model.OrganizationId</p>
+<ul><li><a href="/staff/@Model.OrganizationId/courses">Courses and content</a></li><li><a href="/admin/@Model.OrganizationId/members">Memberships and roles</a></li></ul>
+<a href="/account/organizations">Select a different organization</a>

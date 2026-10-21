@@ -1,0 +1,16 @@
+@model (QuizEditorPage Page, Guid Question, StaffOptionView? Option)
+@{var root=$"/staff/{Model.Page.Unit.OrganizationId}/courses/{Model.Page.Unit.CourseId}/sections/{Model.Page.Unit.SectionId}/lessons/{Model.Page.Unit.Lesson.Id}/quiz/change";
+var o=Model.Option;
+var pending=ViewData["ActionName"] as string=="option" && (Guid?)ViewData["QuestionId"]==Model.Question && (Guid?)ViewData["OptionId"]==o?.Id;
+var form=pending?ViewData["PendingOption"] as OptionForm:null;
+form??=o is null?new(){DisplayOrder=(int)Math.Min(int.MaxValue,1L+Model.Page.Questions.Single(x=>x.Question.Id==Model.Question).Options.Select(x=>x.DisplayOrder).DefaultIfEmpty(0).Max())}:new(){OptionText=o.OptionText,IsCorrect=o.IsCorrect,DisplayOrder=o.DisplayOrder};
+var order=pending&&ViewData.ModelState.TryGetValue("option.DisplayOrder",out var orderState)?orderState.AttemptedValue:form.DisplayOrder.ToString();}
+<form method="post" action="@root">
+@Html.AntiForgeryToken()<input type="hidden" name="actionName" value="option" /><input type="hidden" name="questionId" value="@Model.Question" /><input type="hidden" name="optionId" value="@o?.Id" />
+<label>Option <input name="option.OptionText" value="@form.OptionText" required /></label>
+<label>Order <input type="number" name="option.DisplayOrder" value="@order" min="1" /></label>
+<label><input type="checkbox" name="option.IsCorrect" value="true" checked="@form.IsCorrect" /> Correct</label><button type="submit">Save option</button>
+</form>
+@if(o is not null){
+<form method="post" action="@root">@Html.AntiForgeryToken()<input type="hidden" name="actionName" value="delete" /><input type="hidden" name="questionId" value="@Model.Question" /><input type="hidden" name="optionId" value="@o.Id" /><label><input type="checkbox" name="confirmed" value="true" required /> Confirm deletion of option @o.OptionText</label><button type="submit">Delete option</button></form>
+}

@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="10.2.3" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../LMS.Web/LMS.Web.csproj" />
+    <ProjectReference Include="../LMS.Application/LMS.Application.csproj" />
+    <ProjectReference Include="../LMS.Infrastructure/LMS.Infrastructure.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Using Include="Microsoft.AspNetCore.Http" />
+    <!-- Compile the actual API sources for isolated unit tests without starting the database-seeding host. -->
+    <Compile Include="../LMS.Api/Swagger/OrganizationHeaderOperationFilter.cs" Link="Api/OrganizationHeaderOperationFilter.cs" />
+    <Compile Include="../LMS.Api/Controllers/AuthController.cs" Link="Api/AuthController.cs" />
+    <Compile Include="../LMS.Api/Controllers/AccountRecoveryController.cs" Link="Api/AccountRecoveryController.cs" />
+    <Compile Include="../LMS.Api/Controllers/AuditController.cs" Link="Api/AuditController.cs" />
+    <Compile Include="../LMS.Api/Controllers/UsersController.cs" Link="Api/UsersController.cs" />
+    <Compile Include="../LMS.Api/Controllers/OrganizationsController.cs" Link="Api/OrganizationsController.cs" />
+    <Compile Include="../LMS.Api/Middleware/GlobalExceptionMiddleware.cs" Link="Api/GlobalExceptionMiddleware.cs" />
+    <Compile Include="../LMS.Api/Middleware/OrganizationScopeAttribute.cs" Link="Api/OrganizationScopeAttribute.cs" />
+    <Compile Include="../LMS.Api/Middleware/OrganizationMiddleware.cs" Link="Api/OrganizationMiddleware.cs" />
+    <Compile Include="../LMS.Api/Controllers/EnrollmentsController.cs" Link="Api/EnrollmentsController.cs" />
+    <Compile Include="../LMS.Api/Controllers/CourseInstructorsController.cs" Link="Api/CourseInstructorsController.cs" />
+    <Compile Include="../LMS.Api/Controllers/CoursesController.cs" Link="Api/CoursesController.cs" />
+    <Compile Include="../LMS.Api/Controllers/CourseSectionsController.cs" Link="Api/CourseSectionsController.cs" />
+    <Compile Include="../LMS.Api/Controllers/LessonMediaController.cs" Link="Api/LessonMediaController.cs" />
+    <Compile Include="../LMS.Api/Controllers/LessonContentItemsController.cs" Link="Api/LessonContentItemsController.cs" />
+    <Compile Include="../LMS.Api/Controllers/LessonsController.cs" Link="Api/LessonsController.cs" />
+    <Compile Include="../LMS.Api/Controllers/QuizQuestionsController.cs" Link="Api/QuizQuestionsController.cs" />
+    <Compile Include="../LMS.Api/Controllers/QuizAttemptsController.cs" Link="Api/QuizAttemptsController.cs" />
+    <Compile Include="../LMS.Api/Controllers/AssignmentsController.cs" Link="Api/AssignmentsController.cs" />
+    <Compile Include="../LMS.Api/Controllers/ReportsController.cs" Link="Api/ReportsController.cs" />
+    <Compile Include="../LMS.Api/Controllers/GradebookController.cs" Link="Api/GradebookController.cs" />
+  </ItemGroup>
+</Project>

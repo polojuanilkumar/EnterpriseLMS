@@ -1,0 +1,11 @@
+@model UnitPage
+@{var root=$"/staff/{Model.OrganizationId}/courses/{Model.CourseId}/sections/{Model.SectionId}/lessons/{Model.Lesson.Id}";ViewData["Title"]="Reorder content";}
+<h1>Reorder @Model.Lesson.Title</h1><p>Give every item a distinct nonnegative position.</p>
+<form action="@root/reorder" method="post">@Html.AntiForgeryToken()
+@for(var i=0;i<Model.Content.Items.Length;i++)
+{
+    var item=Model.Content.Items[i];
+    <input type="hidden" name="itemIds" value="@item.Id" />
+    <p><label for="position-@i">@item.Title</label><input id="position-@i" name="positions" type="number" min="0" value="@i" required /></p>
+}
+<button type="submit">Save order</button></form><a href="@root">Cancel</a>

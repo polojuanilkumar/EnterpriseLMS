@@ -15,29 +15,24 @@ namespace LMS.Application.Features.CourseProgress.MyCourses
         private readonly ICourseRepository _courseRepository;
         private readonly ILessonRepository _lessonRepository;
         private readonly ILessonProgressRepository _lessonProgressRepository;
-        private readonly IIdentityService _identityService;
 
         public GetMyCoursesProgressHandler(
             ICourseEnrollmentRepository enrollmentRepository,
             ICourseRepository courseRepository,
             ILessonRepository lessonRepository,
-            ILessonProgressRepository lessonProgressRepository,
-            IIdentityService identityService)
+            ILessonProgressRepository lessonProgressRepository)
         {
             _enrollmentRepository = enrollmentRepository;
             _courseRepository = courseRepository;
             _lessonRepository = lessonRepository;
             _lessonProgressRepository = lessonProgressRepository;
-            _identityService = identityService;
         }
 
         public async Task<IReadOnlyList<MyCourseProgressResponse>> HandleAsync(
-            string email,
+            Guid userId,
             CancellationToken cancellationToken = default)
         {
-            var userId = await _identityService.GetUserIdAsync(email);
-
-            if (!userId.HasValue)
+            if (userId == Guid.Empty)
             {
                 throw new UnauthorizedAccessException(
                     "Authenticated user not found.");
@@ -45,7 +40,7 @@ namespace LMS.Application.Features.CourseProgress.MyCourses
 
             var enrollments =
                 await _enrollmentRepository.GetByUserIdAsync(
-                    userId.Value,
+                    userId,
                     cancellationToken);
 
             var response =
@@ -66,21 +61,22 @@ namespace LMS.Application.Features.CourseProgress.MyCourses
                     course.Id,
                     cancellationToken);
 
-                var lessonIds = lessons
+                var lessonIds = lessons.Where(x => x.IsPublished)
                     .Select(x => x.Id)
                     .ToList();
 
                 var progressRecords =
                     await _lessonProgressRepository
                         .GetByUserAndLessonIdsAsync(
-                            userId.Value,
+                            userId,
                             lessonIds,
                             cancellationToken);
 
-                var totalLessons = lessons.Count;
+                var totalLessons = lessonIds.Count;
 
                 var completedLessons = progressRecords
-                    .Count(x => x.IsCompleted);
+                    .Where(x => x.UserId == userId && x.IsCompleted && lessonIds.Contains(x.LessonId))
+                    .Select(x => x.LessonId).Distinct().Count();
 
                 var progressPercentage = totalLessons == 0
                     ? 0

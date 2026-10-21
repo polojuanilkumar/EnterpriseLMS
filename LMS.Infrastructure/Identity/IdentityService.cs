@@ -1,4 +1,4 @@
-﻿using LMS.Application.Interfaces.Identity;
+using LMS.Application.Interfaces.Identity;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -11,13 +11,19 @@ namespace LMS.Infrastructure.Identity
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
+        private readonly LMS.Application.Features.Organizations.OrganizationContext _organization;
+        private readonly LMS.Application.Interfaces.Organizations.IOrganizationRepository _organizations;
 
         public IdentityService(
             UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole<Guid>> roleManager)
+            RoleManager<IdentityRole<Guid>> roleManager,
+            LMS.Application.Features.Organizations.OrganizationContext organization,
+            LMS.Application.Interfaces.Organizations.IOrganizationRepository organizations)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _organization = organization;
+            _organizations = organizations;
         }
 
         public async Task<IdentityResultDto> CreateUserAsync(
@@ -27,68 +33,7 @@ namespace LMS.Infrastructure.Identity
             string password,
             CancellationToken cancellationToken = default)
         {
-            var user = new ApplicationUser
-            {
-                Id = Guid.NewGuid(),
-                UserName = email,
-                Email = email,
-                FirstName = firstName,
-                LastName = lastName
-            };
-
-            var result = await _userManager.CreateAsync(
-                user,
-                password);
-
-            if (!result.Succeeded)
-            {
-                return new IdentityResultDto
-                {
-                    Succeeded = false,
-                    Errors = result.Errors
-                        .Select(x => x.Description)
-                        .ToArray()
-                };
-            }
-
-            var roleExists =
-                await _roleManager.RoleExistsAsync("Student");
-
-            if (!roleExists)
-            {
-                return new IdentityResultDto
-                {
-                    Succeeded = false,
-                    UserId = user.Id,
-                    Errors =
-                    [
-                        "Student role does not exist."
-                    ]
-                };
-            }
-
-            var roleResult =
-                await _userManager.AddToRoleAsync(
-                    user,
-                    "Student");
-
-            if (!roleResult.Succeeded)
-            {
-                return new IdentityResultDto
-                {
-                    Succeeded = false,
-                    UserId = user.Id,
-                    Errors = roleResult.Errors
-                        .Select(x => x.Description)
-                        .ToArray()
-                };
-            }
-
-            return new IdentityResultDto
-            {
-                Succeeded = true,
-                UserId = user.Id
-            };
+            return await Task.FromResult(new IdentityResultDto { Succeeded = false, Errors = ["Registration requires an organization invitation."] });
         }
 
         public async Task<bool> CheckPasswordAsync(
@@ -189,6 +134,12 @@ namespace LMS.Infrastructure.Identity
             Guid userId,
             string role)
         {
+            if (role is "Admin" or "Instructor" or "Student")
+            {
+                if (!_organization.OrganizationId.HasValue) return false;
+                var membership = await _organizations.GetMembershipAsync(_organization.OrganizationId.Value, userId);
+                return membership?.Role.ToString() == role;
+            }
             var user = await _userManager.FindByIdAsync(
                 userId.ToString());
 

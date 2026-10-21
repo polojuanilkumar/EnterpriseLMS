@@ -1,0 +1,5 @@
+@model LearnerRecoveryPage
+@{ViewData["Title"]="Check learning state";}
+<h1>Check stored learning state</h1><p role="alert">@Model.Notice</p>
+<p>This page is read-only. It does not retry enrollment, cancellation, completion or progress updates.</p>
+<p><a href="@Model.ReturnPath">Inspect enrollment or progress</a> | <a href="/learn/@Model.OrganizationId/courses">My courses</a> | <a href="/learn/@Model.OrganizationId/courses/catalog">Catalog</a></p>

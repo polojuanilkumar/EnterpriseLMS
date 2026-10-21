@@ -1,0 +1,25 @@
+@model UnitPage
+@{var panel=Model.Progress!;var root=$"/learn/{Model.OrganizationId}/courses/{Model.CourseId}/sections/{Model.SectionId}/units/{Model.Lesson.Id}/progress";}
+<section class="lesson-item"><h2>Stored lesson progress</h2>
+@if(panel.Lesson is {} lesson)
+{
+    <p>Lesson state: @(lesson.IsCompleted?"Completed":"In progress"). Stored progress: @lesson.ProgressPercentage%. Started at: @lesson.StartedAt.ToString("u"). Completed at: @(lesson.CompletedAt?.ToString("u")??"Not recorded"). Last accessed at: @lesson.LastAccessedAt.ToString("u").</p>
+}
+else {<p>Lesson state: Not started. No stored progress record is available.</p>}
+<p>Opening this page, loading media and ending playback do not record progress or change LastAccessedAt.</p>
+@if(panel.Course.EnrollmentStatus==1)
+{
+    @if(panel.Lesson is null){<form method="post" action="@root/start">@Html.AntiForgeryToken()<button type="submit">Start lesson</button></form>}
+    else if(!panel.Lesson.IsCompleted)
+    {
+        <form method="post" action="@root/complete">
+            @Html.AntiForgeryToken()
+            <p>Marking this lesson complete records 100% and a completion timestamp. Course enrollment completion remains a separate action.</p>
+            <label><input type="checkbox" name="Form.Confirmed" value="true" required /> I confirm that I want to mark this lesson complete.</label>
+            <button type="submit">Mark lesson complete</button>
+        </form>
+    }
+}
+@await Html.PartialAsync("/Views/Learn/_CourseProgress.cshtml",panel.Course)
+<a href="/learn/@Model.OrganizationId/courses/@Model.CourseId">Course progress and enrollment completion</a>
+</section>

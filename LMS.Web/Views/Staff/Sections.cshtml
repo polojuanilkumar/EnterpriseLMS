@@ -1,0 +1,11 @@
+@model SectionsPage
+@{ ViewData["Title"]=Model.Course.Title; var root=$"/staff/{Model.OrganizationId}/courses/{Model.Course.Id}"; }
+<a href="/staff/@Model.OrganizationId/courses">Courses</a>
+<h1>@Model.Course.Title</h1><p>@Model.Course.Description</p>
+<p>@(Model.Course.IsPublished ? "Published" : "Not published")</p>
+<p><a href="@(root+"/publication?actionName=publish")">Publish course?</a> | <a href="@(root+"/publication?actionName=archive")">Archive course?</a></p>
+<h2>Sections</h2>
+<p><a href="@root/edit">Edit course</a> | <a href="@root/readiness">Publish readiness</a> | <a href="@root/sections/new">Create section</a></p>
+<ol>
+@foreach(var courseSection in Model.Sections) { <li><a href="@root/sections/@courseSection.Id">@courseSection.Title</a></li> }
+</ol>

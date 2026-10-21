@@ -1,0 +1,9 @@
+@model RecoveryForm
+@{Layout=null;}
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><title>Password recovery</title></head><body><main>
+<h1>Password recovery</h1>
+<form method="post" action="/account/forgot-password">@Html.AntiForgeryToken()
+<div asp-validation-summary="All"></div>
+<label>Email <input type="email" name="Email" value="@Model.Email" required maxlength="256" autocomplete="username"/></label>
+<button type="submit">Send recovery instructions</button></form>
+<a href="/account/login">Sign in</a></main></body></html>

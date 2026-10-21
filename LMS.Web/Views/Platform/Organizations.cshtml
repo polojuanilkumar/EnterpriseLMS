@@ -1,0 +1,17 @@
+@model PlatformOrganizationsPage
+@using Microsoft.AspNetCore.WebUtilities
+@{ViewData["Title"]="Platform organizations";
+string PageLink(int page)=>QueryHelpers.AddQueryString("/platform/organizations",new Dictionary<string,string?>{["page"]=page.ToString(),["pageSize"]=Model.Filter.PageSize.ToString(),["search"]=Model.Filter.Search});}
+<h1>Organizations</h1><p><a href="/platform">Platform home</a> | <a href="/platform/organizations/create">Create organization</a></p>
+@if(TempData["OrganizationNotice"] is string notice){<p role="status">@notice</p>}
+<form method="get" action="/platform/organizations"><label for="search">Code or name</label><input id="search" name="search" value="@Model.Filter.Search" maxlength="100" />
+<label for="pageSize">Page size (1–50)</label><input id="pageSize" name="pageSize" type="number" min="1" max="50" value="@Model.Filter.PageSize" /><button>Filter</button></form>
+<p>@Model.Data.Total matching organizations. Page @Model.Data.Page.</p>
+@if(Model.Data.Items.Length==0){<p>No matching organizations on this page.</p>}
+<table class="table"><thead><tr><th>Code</th><th>Name</th><th>State</th><th>Administration</th></tr></thead><tbody>
+@foreach(var org in Model.Data.Items){<tr><td>@org.Code</td><td>@org.Name</td><td>@(org.IsActive?"Active":"Inactive")</td><td>
+@if(org.IsActive){<form method="post" action="/account/organizations">@Html.AntiForgeryToken()<input type="hidden" name="organizationId" value="@org.Id" /><button>Explicitly select @org.Name</button></form>}
+else{<span>Organization selection unavailable.</span>}</td></tr>}
+</tbody></table>
+@if(Model.Data.Page>1){<a href="@PageLink(Model.Data.Page-1)">Previous</a>}
+@if((long)Model.Data.Page*Model.Data.PageSize<Model.Data.Total && Model.Data.Page<10000){<a href="@PageLink(Model.Data.Page+1)">Next</a>}

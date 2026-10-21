@@ -1,0 +1,18 @@
+@model MyCoursesPage
+@{ViewData["Title"]="My courses";var root=$"/learn/{Model.OrganizationId}/courses";}
+<a href="@root/catalog">Published course catalog</a>
+<h1>My courses</h1>
+<p><a href="/learn/@Model.OrganizationId/grades">My grades</a></p>
+<p><a href="/learn/@Model.OrganizationId/assignments/history">Your assignment history and feedback</a></p>
+@if(Model.Courses.Length==0){<p>You have no enrollments in this organization. Browse the catalog to enroll.</p>}
+@foreach(var row in Model.Courses)
+{
+    <section class="lesson-item"><h2>@(row.Course?.Title??"Course unavailable")</h2>
+    <p>Enrollment: @row.Enrollment.State. Enrolled: @row.Enrollment.EnrolledAt.ToString("u"). Historical enrollment completed at: @(row.Enrollment.CompletedAt?.ToString("u")??"Not recorded"). Stored enrollment percentage: @row.Enrollment.ProgressPercentage%.</p>
+    @if(row.Progress is {} progress){<p>Current published-content progress: @progress.CompletedLessons / @progress.TotalLessons lessons completed (@progress.ProgressPercentage%). @(progress.IsCompleted?"All current published lessons completed.":"Current published-content prerequisites are not complete.")</p>}
+    else {<p>Current published-content progress is unavailable.</p>}
+    @if(row.Course?.IsPublished==true&&row.Enrollment.Status is 1 or 2){<a href="@root/@row.Enrollment.CourseId">Open course and completion eligibility</a>}
+    else {<p>@(row.Enrollment.Status==3?"Cancelled enrollment cannot read course lessons. Re-enrollment is available in the catalog when the course is published.":"Course content is currently unpublished or unavailable.")</p>}
+    @if(row.Enrollment.Status==1){<form method="post" action="@root/@row.Enrollment.CourseId/enrollments/@row.Enrollment.Id/cancel">@Html.AntiForgeryToken()<label><input type="checkbox" name="confirmed" value="true" required /> Confirm cancellation of this Active enrollment</label><button type="submit">Cancel enrollment</button></form>}
+    </section>
+}

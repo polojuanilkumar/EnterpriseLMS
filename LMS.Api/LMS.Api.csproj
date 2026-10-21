@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -23,4 +23,10 @@
     <ProjectReference Include="..\LMS.Infrastructure\LMS.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="App_Data/PrivateMedia/**" />
+    <None Remove="App_Data/PrivateMedia/**" />
+  </ItemGroup>
+  <ItemGroup><Content Remove="App_Data\PrivateEmails\**" /><None Remove="App_Data\PrivateEmails\**" /></ItemGroup>
+  <ItemGroup><Content Remove="App_Data\PrivateAssignments\**" /><None Remove="App_Data\PrivateAssignments\**" /></ItemGroup>
 </Project>

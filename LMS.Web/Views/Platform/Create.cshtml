@@ -1,0 +1,11 @@
+@model OrganizationCreateForm
+@{ViewData["Title"]="Create organization";}
+<a href="/platform/organizations">Organizations</a><h1>Create organization</h1>
+<p>An existing account becomes the initial organization Admin. This does not provision an account or grant global SuperAdmin. Platform SuperAdmin accounts cannot be assigned a membership through this operation.</p>
+<form method="post" action="/platform/organizations/create">@Html.AntiForgeryToken()
+<div asp-validation-summary="All" role="alert"></div>
+<p><label asp-for="Code">Unique code</label><input asp-for="Code" maxlength="50" required /></p>
+<p><label asp-for="Name">Organization name</label><input asp-for="Name" maxlength="200" required /></p>
+<p><label asp-for="InitialAdminEmail">Existing initial Admin's exact email</label><input asp-for="InitialAdminEmail" type="email" maxlength="256" required /></p>
+<label><input type="checkbox" name="Confirmed" value="true" required /> I confirm creating this organization and assigning its initial Admin.</label>
+<button>Create organization</button></form>
