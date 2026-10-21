@@ -21,15 +21,17 @@ namespace LMS.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task ExecuteCompletionTransactionAsync(Guid enrollmentId,
+        public async Task ExecuteEnrollmentTransactionAsync(Guid enrollmentId,
             Func<CancellationToken, Task> action, CancellationToken cancellationToken = default)
         {
+            if (!await _context.CourseEnrollments.AnyAsync(x => x.Id == enrollmentId, cancellationToken))
+                throw new KeyNotFoundException("Enrollment not found.");
             try
             {
                 await using var transaction = await _context.Database.BeginTransactionAsync(
                     IsolationLevel.Serializable, cancellationToken);
 
-                // Serialize repeated completion requests before loading tracked enrollment state.
+                // Serialize cancellation and completion before loading tracked enrollment state.
                 // Serializable also holds prerequisite reads stable until the completion is saved.
                 await _context.CourseEnrollments.FromSqlInterpolated(
                     $"SELECT * FROM [CourseEnrollments] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {enrollmentId}")

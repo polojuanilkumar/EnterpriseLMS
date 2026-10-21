@@ -3,5 +3,6 @@
   <Project Path="LMS.Application/LMS.Application.csproj" />
   <Project Path="LMS.Domain/LMS.Domain.csproj" />
   <Project Path="LMS.Infrastructure/LMS.Infrastructure.csproj" />
+  <Project Path="LMS.Tests/LMS.Tests.csproj" />
   <Project Path="LMS.Web/LMS.Web.csproj" />
 </Solution>

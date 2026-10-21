@@ -20,10 +20,15 @@ namespace LMS.Application.Features.Enrollments.CancelEnrollment
             _unitOfWork = unitOfWork;
         }
 
-        public async Task HandleAsync(
+        public Task HandleAsync(
             Guid enrollmentId,
             Guid currentUserId,
             CancellationToken cancellationToken = default)
+            => _enrollmentRepository.ExecuteEnrollmentTransactionAsync(enrollmentId,
+                token => HandleCoreAsync(enrollmentId, currentUserId, token), cancellationToken);
+
+        private async Task HandleCoreAsync(Guid enrollmentId, Guid currentUserId,
+            CancellationToken cancellationToken)
         {
             var enrollment =
                 await _enrollmentRepository.GetByIdAsync(

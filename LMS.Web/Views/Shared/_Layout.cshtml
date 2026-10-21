@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - LMS.Web</title>
-    <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/LMS.Web.styles.css" asp-append-version="true" />
@@ -26,6 +25,12 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
+                        @if(User.Identity?.IsAuthenticated==true)
+                        {
+                            <li class="nav-item"><a class="nav-link" href="/account/home">My workspace</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/account/organizations">Switch organization</a></li>
+                            <li class="nav-item"><form action="/account/logout" method="post">@Html.AntiForgeryToken()<button type="submit" class="btn btn-link">Sign out</button></form></li>
+                        }
                     </ul>
                 </div>
             </div>

@@ -1,0 +1,16 @@
+@model InstructorPage
+@{ViewData["Title"]="Assign course Instructor";}
+<a href="/staff/@Model.OrganizationId/courses">Courses</a><h1>Assign Instructor: @Model.Course.Title</h1>
+<p>Current Instructor: @Model.Course.InstructorId</p>
+<form method="get"><label for="search">Instructor name or email in this organization</label><input id="search" name="search" value="@Model.Choices?.Search" maxlength="100" /><button>Find Instructor</button></form>
+@if(Model.Choices is { } choices){
+<p>@choices.Total matching Instructors, page @choices.Page.</p>
+@if(choices.Page>1){<a href="@Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString($"/admin/{Model.OrganizationId}/courses/{Model.Course.Id}/instructor",new Dictionary<string,string?>{["page"]=(choices.Page-1).ToString(),["search"]=choices.Search})">Previous</a>}
+@if((long)choices.Page*choices.PageSize<choices.Total && choices.Page<10000){<a href="@Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString($"/admin/{Model.OrganizationId}/courses/{Model.Course.Id}/instructor",new Dictionary<string,string?>{["page"]=(choices.Page+1).ToString(),["search"]=choices.Search})">Next</a>}
+}
+<form action="/admin/@Model.OrganizationId/courses/@Model.Course.Id/instructor" method="post">@Html.AntiForgeryToken()
+<div asp-validation-summary="All" role="alert"></div>
+<label for="instructorId">Instructor member</label><select id="instructorId" name="instructorId" required>
+@foreach(var member in Model.Instructors) { <option value="@member.UserId" selected="@(member.UserId==Model.Course.InstructorId)">@member.FirstName @member.LastName @member.Email (@member.UserId)</option> }
+</select><button type="submit">Assign Instructor</button></form>
+@if(Model.Instructors.Length==0) { <p>Assign an Instructor membership before assigning this course.</p> }

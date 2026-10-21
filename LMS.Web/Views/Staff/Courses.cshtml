@@ -1,0 +1,15 @@
+@model StaffCoursesPage
+@{ ViewData["Title"]="Course authoring"; }
+<h1>@(Model.Access.IsAdmin ? "Organization courses" : "My assigned courses")</h1>
+<p><a href="/staff/@Model.Access.OrganizationId/reports/courses">Organization course and learner reports</a></p>
+<p><a href="/staff/@Model.Access.OrganizationId/courses/new">Create course</a></p>
+@if(Model.Access.IsAdmin) { <p><a href="/admin/@Model.Access.OrganizationId">Organization administration</a></p> }
+@if(Model.Courses.Length==0) { <p>No courses are available in this workspace.</p> }
+<ul>
+@foreach(var course in Model.Courses)
+{
+    <li><a href="/staff/@Model.Access.OrganizationId/courses/@course.Id">@course.Title</a> ? @(course.IsPublished ? "Published" : "Not published")
+        @if(Model.Access.IsAdmin) { <a href="/admin/@Model.Access.OrganizationId/courses/@course.Id/instructor">Assign Instructor</a> }
+    </li>
+}
+</ul>

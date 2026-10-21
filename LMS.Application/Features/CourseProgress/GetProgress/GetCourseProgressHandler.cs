@@ -29,7 +29,7 @@ namespace LMS.Application.Features.CourseProgress.GetProgress
             Guid userId,
             CancellationToken cancellationToken = default)
         {
-            await _readable.CheckCourseAsync(courseId, userId, canViewUnpublished: false, cancellationToken);
+            var enrollment = await _readable.CheckCourseAsync(courseId, userId, canViewUnpublished: false, cancellationToken);
 
             var lessons = await _lessonRepository.GetByCourseIdAsync(
                 courseId,
@@ -71,6 +71,9 @@ namespace LMS.Application.Features.CourseProgress.GetProgress
             {
                 CourseId = courseId,
                 UserId = userId,
+                // A Student read cannot take the staff bypass, so the check returns an enrollment.
+                EnrollmentStatus = enrollment!.Status,
+                EnrollmentCompletedAt = enrollment.CompletedAt,
                 TotalLessons = totalLessons,
                 CompletedLessons = completedLessons,
                 ProgressPercentage = progressPercentage,

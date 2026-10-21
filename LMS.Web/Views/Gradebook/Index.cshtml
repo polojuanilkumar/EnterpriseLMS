@@ -1,0 +1,15 @@
+@model MyGradesPage
+@{ViewData["Title"]="My grades";ViewData["GradebookFilter"]=true;var root=$"/learn/{Model.OrganizationId}/grades";}
+<h1>My grades</h1><p><a href="/learn/@Model.OrganizationId/courses">My Courses</a> | <a href="/learn/@Model.OrganizationId/assignments/history">Assignment history</a></p>
+@await Html.PartialAsync("/Views/Reports/_Filters.cshtml",Model.Filter)
+<p>@Model.Courses.Total matching courses · Page @Model.Courses.Page / @Model.Courses.Pages</p>
+@if(Model.Courses.Items.Length==0){<p>No accessible gradebook courses on this page. Active and Completed enrollments are included; Cancelled enrollments cannot read grades.</p>}
+@foreach(var c in Model.Courses.Items)
+{
+    <section class="lesson-item"><h2><a href="@root/courses/@c.CourseId">@c.Title</a></h2><p>Enrollment: @ReportText.Enrollment(c.EnrollmentStatus) · Historical completion: @ReportText.Utc(c.EnrollmentCompletedAt)</p>
+    <p>Current published-content progress: @c.CompletedPublishedLessons / @c.PublishedLessons (@c.CurrentPercentage%). Stored enrollment percentage: @c.StoredEnrollmentPercentage%.</p>
+    <p>@(c.Published?"Published course":"Unpublished course — historical assessments remain available where permitted")</p></section>
+}
+@if(Model.Courses.Page>1){<a href="@(root+Model.Filter.Query(Model.Courses.Page-1))">Previous</a>}
+@if(Model.Courses.Page<Model.Courses.Pages){<a href="@(root+Model.Filter.Query(Model.Courses.Page+1))">Next</a>}
+<p>Grades do not define enrollment completion or an overall course grade.</p>

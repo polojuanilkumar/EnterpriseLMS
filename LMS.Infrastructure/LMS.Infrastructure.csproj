@@ -1,8 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\LMS.Application\LMS.Application.csproj" />
     <ProjectReference Include="..\LMS.Domain\LMS.Domain.csproj" />
+    <InternalsVisibleTo Include="LMS.Tests" />
   </ItemGroup>
 
   <ItemGroup>

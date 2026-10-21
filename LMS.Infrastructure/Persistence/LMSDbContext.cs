@@ -9,13 +9,19 @@ using System.Text;
 
 namespace LMS.Infrastructure.Persistence
 {
-    public class LMSDbContext
+    public partial class LMSDbContext
        : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
     {
         public LMSDbContext(
-            DbContextOptions<LMSDbContext> options)
+            DbContextOptions<LMSDbContext> options,
+            LMS.Application.Features.Organizations.OrganizationContext? organization = null,
+            LMS.Application.Features.Auditing.AuditRequestContext? audit = null,
+            TimeProvider? clock = null)
             : base(options)
         {
+            _organization = organization;
+            _audit = audit;
+            _auditClock = clock ?? TimeProvider.System;
         }
 
         // UserProfile table
@@ -310,6 +316,7 @@ namespace LMS.Infrastructure.Persistence
 
             modelBuilder.ApplyConfigurationsFromAssembly(
                 typeof(LMSDbContext).Assembly);
+            ConfigureOrganizationFilters(modelBuilder);
         }
 
     }

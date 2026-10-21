@@ -1,0 +1,8 @@
+@model InviteForm
+<h1>Invite into selected organization</h1><p>Organization: @ViewBag.OrganizationId</p>
+<form method="post">@Html.AntiForgeryToken()<div asp-validation-summary="All"></div>
+<label>Email <input name="Email" type="email" required maxlength="256" value="@Model.Email"/></label>
+<label>Membership <select name="Role"><option value="1">Student</option><option value="2">Instructor</option><option value="3">Admin</option></select></label>
+<label><input name="Reissue" type="checkbox" value="true"/>Reissue and invalidate previous pending token</label>
+<label><input name="Confirmed" type="checkbox" value="true" required/>Confirm invitation into this selected organization</label>
+<button type="submit">Send invitation</button></form>

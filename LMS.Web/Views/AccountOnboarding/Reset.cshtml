@@ -1,0 +1,9 @@
+@model RecoveryForm
+@{Layout=null;}
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><title>Reset password</title></head><body><main>
+<h1>Reset password</h1><p>@Model.Email</p>
+<p>Use at least eight characters with upper and lower case, a digit and a symbol.</p>
+<form method="post" action="/account/reset-password">@Html.AntiForgeryToken()
+<label>New password <input name="Password" type="password" required maxlength="1024" autocomplete="new-password"/></label>
+<button type="submit">Reset password</button></form>
+<a href="/account/forgot-password">Request a new recovery email</a></main></body></html>

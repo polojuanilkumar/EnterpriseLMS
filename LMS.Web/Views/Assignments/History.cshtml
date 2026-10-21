@@ -1,0 +1,7 @@
+@model AssignmentHistoryPage
+@{ViewData["Title"]="Your assignment history";}
+<h1>Your assignment history</h1><p><a href="/learn/@Model.OrganizationId/courses">My Courses</a></p>
+<p>Active and Completed enrollments retain history after unpublishing. Cancelled enrollments cannot access submitted work; staff retain authorized review.</p>
+@if(Model.Rows.Length==0){<p>No accessible submissions.</p>}
+@foreach(var s in Model.Rows)
+{<p><a href="/learn/@Model.OrganizationId/courses/@s.CourseId/sections/@s.SectionId/units/@s.LessonId/assignments/@s.AssignmentId/submissions/@s.SubmissionId">@s.Title — @s.SubmittedAt.ToString("yyyy-MM-dd HH:mm:ss 'UTC'") — @(s.Graded?"Graded":"Awaiting grading")</a></p>}

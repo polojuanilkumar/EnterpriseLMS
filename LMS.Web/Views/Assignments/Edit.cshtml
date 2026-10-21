@@ -1,0 +1,15 @@
+@model AssignmentPage
+@{ViewData["Title"]="Assignment authoring";}
+<h1>@(Model.Assignment is null?"Create assignment":"Edit assignment")</h1>
+<p><a href="@Model.Root">Assignments</a></p>
+@if(Model.Assignment?.Frozen==true){<p>Submissions exist. Instructions, due date and maximum marks are frozen; only the title can change.</p>}
+<form method="post" action="@(Model.Root+(Model.Assignment is null?"/new":$"/{Model.Assignment.Id}/edit"))">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="All"></div>
+    <label asp-for="Form.Title">Title</label><input asp-for="Form.Title" maxlength="200" />
+    <label asp-for="Form.Instructions">Plain-text instructions</label><textarea asp-for="Form.Instructions" maxlength="20000" disabled="@(Model.Assignment?.Frozen==true)"></textarea>
+    <label asp-for="Form.DueAtUtc">Due date and time (UTC, optional)</label><input asp-for="Form.DueAtUtc" type="datetime-local" step="any" asp-format="{0:yyyy-MM-ddTHH:mm:ss.fffffff}" disabled="@(Model.Assignment?.Frozen==true)" />
+    <p>Enter UTC, not your device’s local time. Submissions at or after this time are rejected by the server.</p>
+    <label asp-for="Form.MaximumMarks">Maximum marks (positive)</label><input asp-for="Form.MaximumMarks" type="number" min="0.01" step="0.01" disabled="@(Model.Assignment?.Frozen==true)" />
+    <button type="submit">Save assignment</button>
+</form>

@@ -1,0 +1,8 @@
+@model PublicationPage
+@{var root=$"/staff/{Model.OrganizationId}/courses/{Model.CourseId}";if(Model.LessonId.HasValue)root+=$"/sections/{Model.SectionId}/lessons/{Model.LessonId}";ViewData["Title"]="Confirm publication change";}
+<h1>Confirm @Model.Action: @Model.Title</h1>
+<p>This changes learner availability. Published content is visible only when the course and lesson are both published and learner access is valid.</p>
+<form action="@root/publication" method="post">@Html.AntiForgeryToken()
+<input type="hidden" name="actionName" value="@Model.Action" />
+<label><input type="checkbox" name="confirmed" value="true" required /> I confirm this publication change</label>
+<button type="submit">Confirm @Model.Action</button></form><a href="@root">Cancel</a>

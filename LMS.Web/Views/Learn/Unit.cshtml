@@ -1,0 +1,60 @@
+@using LMS.Web.Services
+@model UnitPage
+@{ ViewData["Title"]=Model.Lesson.Title; }
+<a href="/learn/@Model.OrganizationId/courses/@Model.CourseId/sections/@Model.SectionId">Back to units</a>
+<h1>@Model.Lesson.Title</h1>
+<p><a href="/learn/@Model.OrganizationId/courses/@Model.CourseId/sections/@Model.SectionId/units/@Model.Lesson.Id/assignments">Assignments, submissions and feedback</a></p>
+<p>@Model.Lesson.Description</p>
+@if(Model.Progress is not null){@await Html.PartialAsync("/Views/Learn/_LessonProgress.cshtml",Model)}
+<p><a href="/learn/@Model.OrganizationId/courses/@Model.CourseId/sections/@Model.SectionId/units/@Model.Lesson.Id/quiz">Quiz instructions, attempts and results</a></p>
+@if(Model.Quiz is not null)
+{
+    <section class="lesson-item"><h2>Lesson quiz</h2>
+    @await Html.PartialAsync("/Views/QuizLearning/_Overview.cshtml",Model.Quiz)
+    </section>
+}
+@foreach(var item in Model.Content.Items)
+{
+    var media=$"/learn/{Model.OrganizationId}/courses/{Model.CourseId}/sections/{Model.SectionId}/units/{Model.Lesson.Id}/items/{item.Id}/media";
+    <section class="lesson-item">
+        <h2>@item.Title</h2>
+        @if(item.IsRequired) { <p>Required</p> }
+        @switch(item.Type)
+        {
+            case 1:
+                <div class="lesson-text">@item.Text</div>
+                break;
+            case 2:
+                var youtube=SafeContent.YouTubeEmbed(item.YouTubeVideoId);
+                if(youtube is not null) { <iframe class="lesson-frame" src="@youtube" title="@item.Title" loading="lazy" referrerpolicy="no-referrer" allowfullscreen></iframe> }
+                else { <p>This video reference is unavailable.</p> }
+                break;
+            case 3:
+                <audio controls preload="none" src="@media">Your browser cannot play this audio.</audio>
+                break;
+            case 4:
+                <video class="lesson-video" controls preload="none" src="@media">Your browser cannot play this video.</video>
+                break;
+            case 5:
+                <iframe class="lesson-pdf" src="@media" title="@item.Title" sandbox loading="lazy" referrerpolicy="no-referrer"></iframe>
+                <p><a href="@(media+"?download=true")">Download PDF if the isolated viewer is unavailable</a></p>
+                break;
+            default:
+                <p>This content type is unavailable.</p>
+                break;
+        }
+    </section>
+}
+@if(Model.Content.Items.Length==0 && Model.Content.Legacy is not null)
+{
+    <div class="lesson-text">@Model.Content.Legacy.Content</div>
+    var youtube=SafeContent.LegacyYouTube(Model.Content.Legacy.VideoUrl);
+    if(youtube is not null)
+    {
+        <iframe class="lesson-frame" src="@youtube" title="Legacy lesson video" referrerpolicy="no-referrer" allowfullscreen></iframe>
+    }
+    else if(!string.IsNullOrWhiteSpace(Model.Content.Legacy.VideoUrl))
+    {
+        <p>Legacy video reference (not loaded automatically): <span class="lesson-text">@Model.Content.Legacy.VideoUrl</span></p>
+    }
+}

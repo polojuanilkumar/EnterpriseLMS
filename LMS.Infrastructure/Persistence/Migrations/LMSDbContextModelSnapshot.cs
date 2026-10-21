@@ -22,6 +22,172 @@ namespace LMS.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("LMS.Domain.Entities.AssignmentGrade", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Feedback")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("GradedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("GraderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Marks")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GraderId");
+
+                    b.HasIndex("SubmissionId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AssignmentGrades_SubmissionId");
+
+                    b.ToTable("AssignmentGrades", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_AssignmentGrades_Marks", "[Marks] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("LMS.Domain.Entities.AssignmentSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AssignmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AttachmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long?>("AttachmentSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Filename")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("InstructionsSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("MaximumMarksSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Text")
+                        .HasMaxLength(100000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttachmentId")
+                        .IsUnique()
+                        .HasFilter("[AttachmentId] IS NOT NULL");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("AssignmentId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AssignmentSubmissions_AssignmentId_UserId");
+
+                    b.ToTable("AssignmentSubmissions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_AssignmentSubmissions_Attachment", "([AttachmentId] IS NULL AND [Filename] IS NULL AND [AttachmentSize] IS NULL) OR ([AttachmentId] IS NOT NULL AND [Filename] IS NOT NULL AND [AttachmentSize] IS NOT NULL AND [AttachmentSize] > 0 AND [AttachmentSize] <= 26214400)");
+
+                            t.HasCheckConstraint("CK_AssignmentSubmissions_Content", "([Text] IS NOT NULL AND LEN(LTRIM(RTRIM([Text]))) > 0) OR [AttachmentId] IS NOT NULL");
+
+                            t.HasCheckConstraint("CK_AssignmentSubmissions_MaximumMarks", "[MaximumMarksSnapshot] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("LMS.Domain.Entities.AuditEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Metadata")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<Guid>("OperationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTimeOffset>("TimestampUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId", "TimestampUtc", "Id");
+
+                    b.HasIndex("ResourceId", "TimestampUtc", "Id");
+
+                    b.HasIndex("OperationId", "Action", "ResourceType", "ResourceId")
+                        .IsUnique();
+
+                    b.HasIndex("Scope", "OrganizationId", "TimestampUtc", "Id");
+
+                    b.ToTable("AuditEvents", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_AuditEvents_Scope", "([Scope] = 'organization' AND [OrganizationId] IS NOT NULL) OR ([Scope] IN ('platform','account') AND [OrganizationId] IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("LMS.Domain.Entities.Category", b =>
                 {
                     b.Property<Guid>("Id")
@@ -84,6 +250,9 @@ namespace LMS.Infrastructure.Persistence.Migrations
                     b.Property<int>("Level")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -104,9 +273,14 @@ namespace LMS.Infrastructure.Persistence.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("Code")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[OrganizationId] IS NULL");
 
                     b.HasIndex("InstructorId");
+
+                    b.HasIndex("OrganizationId", "Code")
+                        .IsUnique()
+                        .HasFilter("[OrganizationId] IS NOT NULL");
 
                     b.ToTable("Courses", (string)null);
                 });
@@ -136,6 +310,9 @@ namespace LMS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CourseId", "UserId")
+                        .IsUnique();
 
                     b.ToTable("CourseEnrollments");
                 });
@@ -224,6 +401,98 @@ namespace LMS.Infrastructure.Persistence.Migrations
                     b.ToTable("Lessons");
                 });
 
+            modelBuilder.Entity("LMS.Domain.Entities.LessonAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DueAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Instructions")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("MaximumMarks")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.ToTable("LessonAssignments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_LessonAssignments_MaximumMarks", "[MaximumMarks] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("LMS.Domain.Entities.LessonContentItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AssetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<string>("YouTubeVideoId")
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.HasIndex("LessonId", "DisplayOrder");
+
+                    b.ToTable("LessonContentItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_LessonContentItems_Order", "[DisplayOrder] >= 0");
+
+                            t.HasCheckConstraint("CK_LessonContentItems_Type", "([Type] = 1 AND [AssetId] IS NULL AND [Text] IS NOT NULL AND [YouTubeVideoId] IS NULL) OR ([Type] = 2 AND [AssetId] IS NULL AND [Text] IS NULL AND LEN([YouTubeVideoId]) = 11 AND [YouTubeVideoId] IS NOT NULL) OR ([Type] IN (3, 4, 5) AND [AssetId] IS NOT NULL AND [Text] IS NULL AND [YouTubeVideoId] IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("LMS.Domain.Entities.LessonProgress", b =>
                 {
                     b.Property<Guid>("Id")
@@ -260,6 +529,94 @@ namespace LMS.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("LessonProgresses");
+                });
+
+            modelBuilder.Entity("LMS.Domain.Entities.MediaAsset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("MediaAssets", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MediaAssets_TypeSize", "([Type] = 3 AND [Size] > 0 AND [Size] <= 26214400) OR ([Type] = 4 AND [Size] > 0 AND [Size] <= 209715200) OR ([Type] = 5 AND [Size] > 0 AND [Size] <= 26214400)");
+                        });
+                });
+
+            modelBuilder.Entity("LMS.Domain.Entities.Organization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Organizations", (string)null);
+                });
+
+            modelBuilder.Entity("LMS.Domain.Entities.OrganizationMembership", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("OrganizationId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("OrganizationMemberships", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OrganizationMemberships_Role", "[Role] IN (1, 2, 3)");
+                        });
                 });
 
             modelBuilder.Entity("LMS.Domain.Entities.Quiz", b =>
@@ -672,6 +1029,74 @@ namespace LMS.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("LMS.Infrastructure.Identity.OrganizationInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("AcceptedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("DeliveredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("InviterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Pending")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InviterId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("OrganizationId", "NormalizedEmail")
+                        .IsUnique()
+                        .HasFilter("[Pending] = 1");
+
+                    b.ToTable("OrganizationInvitations", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
                 {
                     b.Property<Guid>("Id")
@@ -803,11 +1228,46 @@ namespace LMS.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("LMS.Domain.Entities.AssignmentGrade", b =>
+                {
+                    b.HasOne("LMS.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("GraderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LMS.Domain.Entities.AssignmentSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LMS.Domain.Entities.AssignmentSubmission", b =>
+                {
+                    b.HasOne("LMS.Domain.Entities.LessonAssignment", null)
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LMS.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("LMS.Domain.Entities.Course", b =>
                 {
                     b.HasOne("LMS.Domain.Entities.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId");
+
+                    b.HasOne("LMS.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Category");
                 });
@@ -830,12 +1290,65 @@ namespace LMS.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("LMS.Domain.Entities.LessonAssignment", b =>
+                {
+                    b.HasOne("LMS.Domain.Entities.Lesson", null)
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LMS.Domain.Entities.LessonContentItem", b =>
+                {
+                    b.HasOne("LMS.Domain.Entities.MediaAsset", null)
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("LMS.Domain.Entities.Lesson", null)
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("LMS.Domain.Entities.LessonProgress", b =>
                 {
                     b.HasOne("LMS.Domain.Entities.Lesson", null)
                         .WithMany()
                         .HasForeignKey("LessonId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LMS.Domain.Entities.MediaAsset", b =>
+                {
+                    b.HasOne("LMS.Domain.Entities.Lesson", null)
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LMS.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LMS.Domain.Entities.OrganizationMembership", b =>
+                {
+                    b.HasOne("LMS.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LMS.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -908,6 +1421,21 @@ namespace LMS.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("QuizId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LMS.Infrastructure.Identity.OrganizationInvitation", b =>
+                {
+                    b.HasOne("LMS.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("InviterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LMS.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

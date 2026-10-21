@@ -1,0 +1,6 @@
+@model UnitPage
+@{var id=(Guid)ViewData["ItemId"]!;var item=Model.Content.Items.Single(x=>x.Id==id);var root=$"/staff/{Model.OrganizationId}/courses/{Model.CourseId}/sections/{Model.SectionId}/lessons/{Model.Lesson.Id}";ViewData["Title"]="Delete content";}
+<h1>Delete @item.Title?</h1><p>The content item will be removed. Committed media assets remain retained.</p>
+<form action="@root/items/@id/delete" method="post">@Html.AntiForgeryToken()
+<label><input type="checkbox" name="confirmed" value="true" required /> Confirm deletion</label>
+<button type="submit">Delete item</button></form><a href="@root">Cancel</a>

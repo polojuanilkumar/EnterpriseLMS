@@ -1,0 +1,23 @@
+@model SectionsPage
+@{ ViewData["Title"]=Model.Course.Title; }
+<a href="/learn/@Model.OrganizationId/courses">My courses</a>
+<h1>@Model.Course.Title</h1>
+<p>@Model.Course.Description</p>
+@if(Model.Learning is {} learning)
+{
+    <section class="lesson-item"><h2>Course progress</h2>
+    @await Html.PartialAsync("/Views/Learn/_CourseProgress.cshtml",learning.Progress)
+    @if(learning.Progress.CanComplete)
+    {
+        <form method="post" action="/learn/@Model.OrganizationId/courses/@Model.Course.Id/enrollments/@learning.Enrollment.Id/complete">@Html.AntiForgeryToken()<label><input type="checkbox" name="confirmed" value="true" required /> Confirm completion of this enrollment</label><button type="submit">Complete enrollment</button></form>
+    }
+    </section>
+}
+<h2>Sections</h2>
+@if(Model.Sections.Length==0) { <p>No sections are available.</p> }
+<ol>
+@foreach(var courseSection in Model.Sections)
+{
+    <li><a href="/learn/@Model.OrganizationId/courses/@Model.Course.Id/sections/@courseSection.Id">@courseSection.Title</a></li>
+}
+</ol>

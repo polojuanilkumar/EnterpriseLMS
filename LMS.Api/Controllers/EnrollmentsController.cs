@@ -1,4 +1,4 @@
-﻿using LMS.Application.Common.Models;
+using LMS.Application.Common.Models;
 using LMS.Application.Features.Enrollments.CancelEnrollment;
 using LMS.Application.Features.Enrollments.CompleteEnrollment;
 using LMS.Application.Features.Enrollments.EnrollCourse;
@@ -15,6 +15,7 @@ namespace LMS.Api.Controllers
     [ApiController]
     [Route("api/Enrollments")]
     [Authorize]
+    [LMS.Api.Middleware.OrganizationScope]
     public sealed class EnrollmentsController : ControllerBase
     {
         private readonly EnrollCourseHandler _enrollCourseHandler;
@@ -39,6 +40,11 @@ namespace LMS.Api.Controllers
         }
 
         [HttpPost("/api/Courses/{courseId}/enroll")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Enroll(
             Guid courseId,
             CancellationToken cancellationToken)
@@ -78,6 +84,8 @@ namespace LMS.Api.Controllers
 
 
         [HttpGet("me")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetMyEnrollments(
     CancellationToken cancellationToken)
         {
@@ -106,6 +114,10 @@ namespace LMS.Api.Controllers
 
 
         [HttpGet("{id:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(
     Guid id,
     CancellationToken cancellationToken)
@@ -174,6 +186,11 @@ namespace LMS.Api.Controllers
 
 
         [HttpPatch("{id:guid}/cancel")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Cancel(
     Guid id,
     CancellationToken cancellationToken)
@@ -203,23 +220,24 @@ namespace LMS.Api.Controllers
 
         [Authorize(Roles = "Student")]
         [HttpGet("my-courses/progress")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetMyCoursesProgress(
     CancellationToken cancellationToken)
         {
-            var email = User.FindFirst(
-                System.Security.Claims.ClaimTypes.Email)?.Value;
-
-            if (string.IsNullOrWhiteSpace(email))
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                || userId == Guid.Empty)
             {
                 return Unauthorized(new
                 {
                     success = false,
-                    message = "Authenticated user email was not found."
+                    message = "Authenticated user ID was not found."
                 });
             }
 
             var result = await _getMyCoursesProgressHandler.HandleAsync(
-                email,
+                userId,
                 cancellationToken);
 
             return Ok(new

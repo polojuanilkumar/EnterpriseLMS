@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using FluentValidation;
 using LMS.Api.Middleware;
 using LMS.Application.Features.Authentication.Login;
@@ -83,8 +84,34 @@ using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.AspNetCore.Mvc", LogLevel.Warning);
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("account-recovery", http => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+        http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+        { PermitLimit = 5, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
+    options.AddPolicy("organization-administration", http => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+        http.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+        { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
+});
+
+builder.Services.AddScoped<LMS.Application.Features.Organizations.OrganizationContext>();
+builder.Services.AddScoped<LMS.Application.Interfaces.Organizations.IOrganizationRepository, OrganizationRepository>();
+builder.Services.AddScoped<LMS.Application.Features.Organizations.OrganizationHandlers>();
 
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+builder.Services.AddScoped<LMS.Application.Features.Assignments.IAssignmentRepository, AssignmentRepository>();
+builder.Services.AddScoped<LMS.Application.Features.Assignments.AssignmentHandlers>();
+builder.Services.AddScoped<LMS.Application.Features.Reporting.IReportingRepository, ReportingRepository>();
+builder.Services.AddScoped<LMS.Application.Features.Reporting.ReportingHandlers>();
+builder.Services.AddSingleton<LMS.Application.Features.Assignments.IAssignmentStorage>(_=>new LMS.Infrastructure.Storage.AssignmentStorage(
+    builder.Configuration["PrivateStorage:Assignments"] ?? Path.Combine(builder.Environment.ContentRootPath,"App_Data","PrivateAssignments"),
+    builder.Environment.WebRootPath??Path.Combine(builder.Environment.ContentRootPath,"wwwroot")));
 builder.Services.AddScoped<LMS.Application.Interfaces.QuizAttempts.IQuizAttemptRepository, QuizAttemptRepository>();
 builder.Services.AddScoped<LMS.Application.Features.QuizAttempts.StartQuizAttempt.StartQuizAttemptHandler>();
 builder.Services.AddScoped<LMS.Application.Features.QuizAttempts.SubmitQuizAttempt.SubmitQuizAttemptHandler>();
@@ -96,6 +123,7 @@ builder.Services.AddScoped<LMS.Application.Features.QuizAttempts.GetQuizAttempts
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 //builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+builder.Services.AddAntiforgery(o => { o.HeaderName = "X-CSRF-TOKEN"; o.Cookie.SecurePolicy = CookieSecurePolicy.Always; });
 builder.Services.AddValidatorsFromAssembly(
     typeof(UpdateUserProfileValidator).Assembly);
 builder.Services.AddEndpointsApiExplorer();
@@ -136,6 +164,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
+    options.OperationFilter<LMS.Api.Swagger.OrganizationHeaderOperationFilter>();
     options.AddSecurityDefinition(
         "Bearer",
         new OpenApiSecurityScheme
@@ -160,9 +189,19 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddDbContext<LMSDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString(
-            "DefaultConnection")));
+            "DefaultConnection")).AddInterceptors(new AuditCommandGuard()));
 
-builder.Services.AddDataProtection();
+var protection = builder.Services.AddDataProtection();
+if (builder.Configuration["DataProtection:KeyPath"] is string keyPath)
+    protection.PersistKeysToFileSystem(new DirectoryInfo(keyPath)).SetApplicationName(builder.Configuration["DataProtection:ApplicationName"] ?? "LMS.Api");
+builder.Services.Configure<DataProtectionTokenProviderOptions>(o => o.TokenLifespan = TimeSpan.FromHours(1));
+builder.Services.AddScoped<IAccountOnboarding, AccountOnboarding>();
+builder.Services.AddScoped<LMS.Application.Features.Auditing.AuditRequestContext>();
+builder.Services.AddScoped<LMS.Application.Features.Auditing.IAuditWriter>(sp => sp.GetRequiredService<LMSDbContext>());
+builder.Services.AddScoped<LMS.Application.Features.Auditing.IAuditObservationWriter, AuditObservationWriter>();
+builder.Services.AddScoped<LMS.Application.Features.Auditing.IAuditQueryRepository, AuditQueryRepository>();
+if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Smoke")) builder.Services.AddSingleton<IAccountEmailSender>(new DevelopmentAccountEmailSender(builder.Configuration["PrivateStorage:Emails"] ?? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "PrivateEmails")));
+else builder.Services.AddSingleton<IAccountEmailSender, UnconfiguredAccountEmailSender>();
 
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
@@ -199,6 +238,15 @@ builder.Services
             ?? throw new InvalidOperationException(
                 "JWT audience is not configured.");
 
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async ctx =>
+            {
+                var users = ctx.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
+                if (!await JwtSecurityStampValidation.ValidAsync(ctx.Principal, users))
+                    ctx.Fail("Fresh login required.");
+            }
+        };
         options.TokenValidationParameters =
             new TokenValidationParameters
             {
@@ -245,6 +293,7 @@ builder.Services.AddScoped<UpdateMyProfileHandler>();
 builder.Services.AddScoped<
     ICourseRepository,
     CourseRepository>();
+builder.Services.AddScoped<LMS.Application.Features.Courses.AssignCourseInstructor.AssignCourseInstructorHandler>();
 builder.Services.AddScoped<CreateCourseHandler>();
 builder.Services.AddScoped<GetCoursesHandler>();
 builder.Services.AddScoped<GetCourseByIdHandler>();
@@ -277,6 +326,13 @@ builder.Services.AddScoped<GetCourseSectionByIdHandler>();
 builder.Services.AddScoped<UpdateCourseSectionHandler>();
 builder.Services.AddScoped<DeleteCourseSectionHandler>();
 
+builder.Services.AddScoped<IMediaAssetRepository, MediaAssetRepository>();
+builder.Services.AddScoped<LMS.Application.Features.LessonContent.MediaAssetHandlers>();
+builder.Services.AddSingleton<IPrivateMediaStorage>(_ => new LMS.Infrastructure.Storage.LocalPrivateMediaStorage(
+    builder.Configuration["PrivateStorage:Media"] ?? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "PrivateMedia"),
+    builder.Environment.WebRootPath ?? Path.Combine(builder.Environment.ContentRootPath, "wwwroot")));
+builder.Services.AddScoped<ILessonContentItemRepository, LessonContentItemRepository>();
+builder.Services.AddScoped<LMS.Application.Features.LessonContent.LessonContentHandlers>();
 builder.Services.AddScoped<ILessonRepository, LessonRepository>();
 builder.Services.AddScoped<LMS.Application.Features.Lessons.Common.EnsureLessonOwnership>();
 builder.Services.AddScoped<CreateLessonHandler>();
@@ -373,9 +429,12 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 //})
 //.WithName("GetWeatherForecast");
 
+app.UseRouting();
 app.UseAuthentication();
+app.UseMiddleware<OrganizationMiddleware>();
 
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 

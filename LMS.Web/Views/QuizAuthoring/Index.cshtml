@@ -1,0 +1,40 @@
+@model QuizEditorPage
+@{var root=$"/staff/{Model.Unit.OrganizationId}/courses/{Model.Unit.CourseId}/sections/{Model.Unit.SectionId}/lessons/{Model.Unit.Lesson.Id}/quiz";ViewData["Title"]="Quiz authoring";}
+<a href="@(root[..^5])">Back to lesson</a>
+<h1>Quiz authoring</h1>
+<div asp-validation-summary="All" role="alert"></div>
+<p>Unpublish before editing. Questions, options and scoring settings are locked after attempts exist. Publication validates ordering, marks and correct option counts.</p>
+<p>SingleChoice needs exactly one correct option. MultipleChoice needs at least two correct options. TrueFalse needs exactly two options and one correct option. Use positive marks and unique positive orders within each parent.</p>
+<form method="post" action="@root">
+    @Html.AntiForgeryToken()
+    <label>Title <input asp-for="Form.Title" /></label>
+    <label>Description <textarea asp-for="Form.Description"></textarea></label>
+    <label>Passing percentage <input asp-for="Form.PassingPercentage" /></label>
+    <label>Time limit (minutes) <input asp-for="Form.TimeLimitInMinutes" /></label>
+    <label>Maximum attempts <input asp-for="Form.MaxAttempts" /></label>
+    <button type="submit">Save quiz</button>
+</form>
+@if(Model.Quiz is not null)
+{
+    <p>@(Model.Quiz.IsPublished?"Published":"Draft")</p>
+    <form method="post" action="@root/change">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="actionName" value="@(Model.Quiz.IsPublished?"unpublish":"publish")" />
+        <label><input type="checkbox" name="confirmed" value="true" required /> Confirm @(Model.Quiz.IsPublished?"unpublish":"publish") quiz</label>
+        <button type="submit">@(Model.Quiz.IsPublished?"Unpublish":"Publish")</button>
+    </form>
+    @foreach(var row in Model.Questions)
+    {
+        <section><h2>@row.Question.QuestionText</h2>
+        @await Html.PartialAsync("/Views/QuizAuthoring/_Question.cshtml",(Model,row.Question))
+        @foreach(var option in row.Options)
+        {
+            @await Html.PartialAsync("/Views/QuizAuthoring/_Option.cshtml",(Model,row.Question.Id,(StaffOptionView?)option))
+        }
+        <h3>Add option</h3>
+        @await Html.PartialAsync("/Views/QuizAuthoring/_Option.cshtml",(Model,row.Question.Id,(StaffOptionView?)null))
+        </section>
+    }
+    <h2>Add question</h2>
+    @await Html.PartialAsync("/Views/QuizAuthoring/_Question.cshtml",(Model,(QuestionView?)null))
+}

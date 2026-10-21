@@ -1,0 +1,14 @@
+@model OrganizationView[]
+@{ ViewData["Title"] = "Choose organization"; }
+<h1>Choose organization</h1>
+<p><a href="/platform">Platform administration (stored SuperAdmin authorization required)</a></p>
+<p>Select an organization to open the workspace for your current membership role.</p>
+@if(Model.Length==0) { <p>No organizations are available for this account.</p> }
+@foreach(var organization in Model)
+{
+    <form action="/account/organizations" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="organizationId" value="@organization.Id" />
+        <button type="submit">@organization.Name</button>
+    </form>
+}

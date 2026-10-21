@@ -1,0 +1,26 @@
+@model ReadinessPage
+@{ var root=$"/staff/{Model.OrganizationId}/courses/{Model.Course.Id}"; }
+<h1>Publish readiness: @Model.Course.Title</h1>
+<p>Course state: @Model.Course.Status</p>
+<h2>Course and lesson publication rules</h2>
+<p>No content-based blockers: existing policies do not require sections, lessons, content items or quizzes before publishing a course or lesson. Publication still requires current organization access and course ownership. The confirmation action rechecks authorization and executes the current API publication handler.</p>
+<p>Missing content below is informational, not a publication blocker. Students additionally need enrollment and a published course and lesson. Quiz publication is independent; a draft quiz does not block course publication.</p>
+<p><a href="@root/publication?actionName=publish">Review and confirm course publication</a> | <a href="@root">Author course</a></p>
+@if(Model.Sections.Length==0) { <p>Information: no sections.</p> }
+@foreach(var group in Model.Sections) {
+<h2>@group.Section.DisplayOrder. @group.Section.Title</h2>
+@if(group.Lessons.Length==0) { <p>Information: no lessons in this section.</p> }
+@foreach(var row in group.Lessons) {
+var unit=row.Unit; var lessonRoot=$"{root}/sections/{group.Section.Id}/lessons/{unit.Lesson.Id}";
+<h3><a href="@lessonRoot">@unit.Lesson.Title</a> - @(unit.Lesson.IsPublished?"Published":"Draft")</h3>
+<a href="@lessonRoot/publication?actionName=publish">Review and confirm lesson publication</a>
+@if(unit.Content.Items.Length>0) {
+<ol>@foreach(var item in unit.Content.Items) { <li>@item.DisplayOrder. @item.Title - @(item.Type switch {1=>"Text",2=>"YouTube",3=>"MP3",4=>"MP4",5=>"PDF",_=>"Unknown"}) @(item.IsRequired?"(required flag; does not change publication policy)":"")</li> }</ol>
+} else if(!string.IsNullOrWhiteSpace(unit.Content.Legacy?.Content)||!string.IsNullOrWhiteSpace(unit.Content.Legacy?.VideoUrl)) {
+<p>Legacy lesson content is available; no content items. Legacy video links retain the learner viewer's supported-format restrictions.</p>
+} else { <p>Information: no content items or legacy content.</p> }
+<p>Quiz: @(row.Quiz is null?"None (optional)":$"{row.Quiz.Title} - {(row.Quiz.IsPublished?"Published":"Draft")}")</p>
+}
+}
+<h2>Separate quiz publication rules</h2>
+<p>Quiz publication validates at least one question, positive marks, at least two options, and correct-option counts for the question type. This page shows quiz states, not a quiz configuration audit. Use existing quiz authoring APIs to validate and publish quizzes; no quiz requirement is added to course publication.</p>

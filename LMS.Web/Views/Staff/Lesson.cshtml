@@ -1,0 +1,36 @@
+@using LMS.Web.Services
+@model StaffLessonPage
+@{var unit=Model.Unit;ViewData["Title"]=unit.Lesson.Title;var root=$"/staff/{unit.OrganizationId}/courses/{unit.CourseId}/sections/{unit.SectionId}/lessons/{unit.Lesson.Id}";}
+<a href="/staff/@unit.OrganizationId/courses/@unit.CourseId/sections/@unit.SectionId">Lessons</a>
+<p><a href="@root/edit">Edit lesson / Unit</a></p>
+<p><a href="@root/quiz">Manage quiz, questions and options</a></p>
+<p><a href="@root/assignments">Manage assignments and grade submissions</a></p>
+<h1>@unit.Lesson.Title</h1><p>@unit.Lesson.Description</p><p>@(unit.Lesson.IsPublished ? "Published" : "Draft")</p>
+<p><a href="@root/items/new">Add content</a> | <a href="@root/reorder">Reorder</a> | <a href="@(root+"/publication?actionName="+(unit.Lesson.IsPublished?"unpublish":"publish"))">@(unit.Lesson.IsPublished?"Unpublish":"Publish") lesson?</a></p>
+@foreach(var item in unit.Content.Items)
+{
+    var media=$"{root}/items/{item.Id}/media";
+    <section class="lesson-item">
+        <h2>@item.Title</h2><p>Order @item.DisplayOrder ? @(item.IsRequired ? "Required" : "Optional")</p>
+        <p><a href="@root/items/@item.Id/edit">Edit</a> | <a href="@root/items/@item.Id/delete">Delete?</a></p>
+        @if(item.Type==1) { <div class="lesson-text">@item.Text</div> }
+        else if(item.Type==2)
+        {
+            var youtube=SafeContent.YouTubeEmbed(item.YouTubeVideoId);
+            if(youtube is not null) { <iframe class="lesson-frame" src="@youtube" title="@item.Title" referrerpolicy="no-referrer" allowfullscreen></iframe> }
+        }
+        else if(item.Type==3) { <audio controls preload="none" src="@media"></audio> }
+        else if(item.Type==4) { <video class="lesson-video" controls preload="none" src="@media"></video> }
+        else if(item.Type==5)
+        {
+            <iframe class="lesson-pdf" sandbox src="@media" title="@item.Title" referrerpolicy="no-referrer"></iframe>
+            <a href="@(media+"?download=true")">Download PDF</a>
+        }
+    </section>
+}
+@if(unit.Content.Items.Length==0 && unit.Content.Legacy is not null)
+{
+    <h2>Legacy content</h2><div class="lesson-text">@unit.Content.Legacy.Content</div>
+    <p>Legacy video reference: @unit.Content.Legacy.VideoUrl</p>
+    <p>Adding an item replaces the legacy presentation in the viewer without modifying the legacy fields.</p>
+}

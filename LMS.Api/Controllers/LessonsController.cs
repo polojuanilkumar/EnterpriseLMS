@@ -27,6 +27,7 @@ namespace LMS.Api.Controllers
 {
     [ApiController]
     [Authorize]
+    [LMS.Api.Middleware.OrganizationScope]
     public sealed class LessonsController : ControllerBase
     {
         private readonly CreateLessonHandler _createLessonHandler;

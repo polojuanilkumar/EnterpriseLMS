@@ -30,9 +30,6 @@ namespace LMS.Application.Features.Quizzes.Common
             if (quiz is null || (!quiz.IsPublished && !canViewUnpublished))
                 throw new KeyNotFoundException(notFoundMessage);
 
-            if (canViewUnpublished)
-                return;
-
             if (userId == Guid.Empty)
                 throw new UnauthorizedAccessException("Authenticated user ID was not found.");
 
@@ -41,7 +38,7 @@ namespace LMS.Application.Features.Quizzes.Common
             if (forMutation)
                 await _lessonReadable.CheckForMutationAsync(lesson, userId, cancellationToken);
             else
-                await _lessonReadable.CheckAsync(lesson, userId, canViewUnpublished: false, cancellationToken);
+                await _lessonReadable.CheckAsync(lesson, userId, canViewUnpublished, cancellationToken);
         }
     }
 }

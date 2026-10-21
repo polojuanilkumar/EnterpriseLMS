@@ -1,0 +1,18 @@
+@model StaffReportsPage
+@{ViewData["Title"]="Course reports";var root=$"/staff/{Model.OrganizationId}/reports/courses";}
+<h1>Organization course reports</h1><p><a href="/staff/@Model.OrganizationId/courses">Courses and authoring</a></p>
+@await Html.PartialAsync("/Views/Reports/_Filters.cshtml",Model.Filter)
+<p>@Model.Courses.Total matching courses · Page @Model.Courses.Page / @Model.Courses.Pages</p>
+@if(Model.Courses.Items.Length==0){<p>No matching courses on this page.</p>}
+@foreach(var c in Model.Courses.Items)
+{
+    <section class="lesson-item"><h2><a href="@root/@c.CourseId/learners">@c.Title</a></h2><p>@(c.Published?"Published":"Unpublished") · Current published lessons: @c.PublishedLessons</p>
+    <p>Enrollments: @c.Enrollments (Active @c.Active, Completed @c.Completed, Cancelled @c.Cancelled)</p>
+    <p>Current published-content progress across all stored enrollments: @c.CompletedPublishedLearnerLessons / @c.ProgressDenominator learner-lessons (@c.CurrentPercentage%).</p>
+    <p>Stored quiz attempts: Started @c.QuizStarted, Submitted @c.QuizSubmitted, Expired @c.QuizExpired. Passed @c.QuizPassed, Failed @c.QuizFailed, Unavailable submitted results @c.QuizUnavailable.</p>
+    <p>Assignments (including unpublished): @c.Assignments · Submissions: @c.Submissions · Graded: @c.Graded · Ungraded: @c.Ungraded</p>
+    </section>
+}
+@if(Model.Courses.Page>1){<a href="@(root+Model.Filter.Query(Model.Courses.Page-1))">Previous</a>}
+@if(Model.Courses.Page<Model.Courses.Pages){<a href="@(root+Model.Filter.Query(Model.Courses.Page+1))">Next</a>}
+<p>Counts reflect stored records, including historical work. Filters select courses; counts within each course include all enrollment states. Separate count/page reads can differ during concurrent changes. No overall grade is calculated.</p>

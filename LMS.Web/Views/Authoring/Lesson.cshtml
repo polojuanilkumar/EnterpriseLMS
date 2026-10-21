@@ -1,0 +1,17 @@
+@model LessonEditor
+<h1>@(Model.LessonId.HasValue ? "Edit lesson / Unit" : "Create lesson / Unit")</h1>
+<form method="post">
+@Html.AntiForgeryToken()
+<div asp-validation-summary="All"></div>
+<p><label asp-for="Form.Title"></label><input asp-for="Form.Title" /></p>
+<p><label asp-for="Form.Description"></label><textarea asp-for="Form.Description"></textarea></p>
+<p><label asp-for="Form.DisplayOrder">Display order</label><input asp-for="Form.DisplayOrder" min="1" /></p>
+<p><label asp-for="Form.DurationInMinutes">Duration (minutes)</label><input asp-for="Form.DurationInMinutes" min="0" /></p>
+<fieldset><legend>Legacy content</legend>
+<p>These fields remain stored. Learners use them only while this lesson has no content items. Manage Text, YouTube, MP3, MP4 and PDF items from the lesson page.</p>
+<p><label asp-for="Form.LessonType">Legacy type</label><select asp-for="Form.LessonType"><option value="1">Text</option><option value="2">Video</option></select></p>
+<p><label asp-for="Form.Content">Legacy text</label><textarea asp-for="Form.Content"></textarea></p>
+<p><label asp-for="Form.VideoUrl">Legacy video URL</label><input asp-for="Form.VideoUrl" /></p>
+</fieldset><button type="submit">Save lesson</button>
+</form>
+<a href="/staff/@Model.OrganizationId/courses/@Model.CourseId/sections/@Model.SectionId">Section</a>
