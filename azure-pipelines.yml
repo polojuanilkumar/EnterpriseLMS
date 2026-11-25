@@ -1,29 +1,75 @@
-
 trigger:
   branches:
     include:
-      - main
+      - 'main'
 
 pr: none
+
+variables:
+  buildConfiguration: 'Release'
+  dotnetVersion: '10.0.x'
+  solution: 'EnterpriseLMS.sln'
+  webApiProject: 'EnterpriseLMS.API/EnterpriseLMS.API.csproj'
 
 pool:
   vmImage: 'ubuntu-latest'
 
-steps:
-  - checkout: self
+stages:
+  - stage: Build
+    displayName: 'Build EnterpriseLMS'
 
-  - task: UseDotNet@2
-    displayName: 'Install .NET 10 SDK'
-    inputs:
-      packageType: 'sdk'
-      version: '10.0.x'
+    jobs:
+      - job: BuildApplication
+        displayName: 'Build and Package Web API'
 
-  - script: dotnet --version
-    displayName: 'Verify .NET SDK Version'
+        steps:
+          - checkout: self
+            clean: true
 
-  - script: |
-      echo "EnterpriseLMS Pipeline Started"
-      echo "GitHub Integration Successful"
-      echo "Branch: $(Build.SourceBranch)"
-      echo "Build ID: $(Build.BuildId)"
-    displayName: 'Verify Pipeline Configuration'
+          - task: UseDotNet@2
+            displayName: 'Install .NET 10 SDK'
+            inputs:
+              packageType: 'sdk'
+              version: '$(dotnetVersion)'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore NuGet Packages'
+            inputs:
+              command: 'restore'
+              projects: '$(solution)'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Build Solution'
+            inputs:
+              command: 'build'
+              projects: '$(solution)'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          - script: echo "No test project configured. Automated tests not executed."
+            displayName: 'Report Test Status'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish Web API'
+            inputs:
+              command: 'publish'
+              publishWebProjects: false
+              projects: '$(webApiProject)'
+              arguments: '--configuration $(buildConfiguration) --no-build --no-restore --output $(Build.ArtifactStagingDirectory)/publish'
+              zipAfterPublish: false
+              modifyOutputPath: false
+
+          - task: ArchiveFiles@2
+            displayName: 'Create Deployment ZIP'
+            inputs:
+              rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/publish'
+              includeRootFolder: false
+              archiveType: 'zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/EnterpriseLMS.zip'
+              replaceExistingArchive: true
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Deployment Artifact'
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/EnterpriseLMS.zip'
+              artifact: 'drop'
+              publishLocation: 'pipeline'
