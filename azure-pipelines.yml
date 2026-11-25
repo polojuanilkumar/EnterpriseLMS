@@ -12,13 +12,19 @@ variables:
   solution: 'EnterpriseLMS.slnx'
   webApiProject: 'LMS.Api/LMS.Api.csproj'
   testProject: 'LMS.Tests/LMS.Tests.csproj'
+  azureWebAppName: 'app-enterpriselms-api-dev'
 
 pool:
   vmImage: 'ubuntu-latest'
 
 stages:
+
+  # ==========================================
+  # STAGE 1: CONTINUOUS INTEGRATION
+  # ==========================================
+
   - stage: Build
-    displayName: 'Build EnterpriseLMS'
+    displayName: 'CI - Build EnterpriseLMS'
 
     jobs:
       - job: BuildApplication
@@ -26,58 +32,46 @@ stages:
 
         steps:
 
-          # Step 1: Checkout GitHub source code
+          # Checkout source code
           - checkout: self
             clean: true
 
-          # Step 2: Install .NET 10 SDK
+          # Install .NET 10 SDK
           - task: UseDotNet@2
             displayName: 'Install .NET 10 SDK'
             inputs:
               packageType: 'sdk'
               version: '$(dotnetVersion)'
 
-          # Step 3: Verify SDK version
+          # Verify SDK version
           - script: dotnet --version
             displayName: 'Verify .NET SDK Version'
 
-          # Step 4: Verify solution and project paths
+          # Verify project paths
           - script: |
               echo "Available solution and project files:"
 
               find "$(Build.SourcesDirectory)" -type f \
                 \( -name "*.sln" -o -name "*.slnx" -o -name "*.csproj" \)
 
-              echo "Configured solution: $(solution)"
-              echo "Configured API project: $(webApiProject)"
-              echo "Configured test project: $(testProject)"
-
-              if [ ! -f "$(Build.SourcesDirectory)/$(solution)" ]; then
-                echo "ERROR: Solution file not found"
-                exit 1
-              fi
-
-              if [ ! -f "$(Build.SourcesDirectory)/$(webApiProject)" ]; then
-                echo "ERROR: Web API project file not found"
-                exit 1
-              fi
-
-              if [ ! -f "$(Build.SourcesDirectory)/$(testProject)" ]; then
-                echo "ERROR: Test project file not found"
-                exit 1
-              fi
+              for file in "$(solution)" "$(webApiProject)" "$(testProject)"; do
+                if [ ! -f "$(Build.SourcesDirectory)/$file" ]; then
+                  echo "ERROR: File not found: $file"
+                  exit 1
+                fi
+              done
 
               echo "All project paths verified successfully"
             displayName: 'Verify Solution and Project Paths'
 
-          # Step 5: Restore NuGet packages
+          # Restore NuGet packages
           - task: DotNetCoreCLI@2
             displayName: 'Restore NuGet Packages'
             inputs:
               command: 'restore'
               projects: '$(solution)'
 
-          # Step 6: Build complete solution
+          # Build solution
           - task: DotNetCoreCLI@2
             displayName: 'Build Solution'
             inputs:
@@ -85,7 +79,7 @@ stages:
               projects: '$(solution)'
               arguments: '--configuration $(buildConfiguration) --no-restore'
 
-          # Step 7: Execute automated tests
+          # Execute automated tests
           - task: DotNetCoreCLI@2
             displayName: 'Run Unit Tests'
             inputs:
@@ -94,7 +88,7 @@ stages:
               arguments: '--configuration $(buildConfiguration)'
               publishTestResults: true
 
-          # Step 8: Publish only Web API
+          # Publish API
           - task: DotNetCoreCLI@2
             displayName: 'Publish Web API'
             inputs:
@@ -105,7 +99,7 @@ stages:
               zipAfterPublish: false
               modifyOutputPath: false
 
-          # Step 9: Create ZIP package
+          # Create deployment ZIP
           - task: ArchiveFiles@2
             displayName: 'Create Deployment ZIP'
             inputs:
@@ -115,10 +109,86 @@ stages:
               archiveFile: '$(Build.ArtifactStagingDirectory)/EnterpriseLMS.zip'
               replaceExistingArchive: true
 
-          # Step 10: Publish pipeline artifact
+          # Publish artifact
           - task: PublishPipelineArtifact@1
             displayName: 'Publish Deployment Artifact'
             inputs:
               targetPath: '$(Build.ArtifactStagingDirectory)/EnterpriseLMS.zip'
               artifact: 'drop'
               publishLocation: 'pipeline'
+
+  # ==========================================
+  # STAGE 2: CONTINUOUS DEPLOYMENT
+  # ==========================================
+
+  - stage: Deploy
+    displayName: 'CD - Deploy to Azure DEV'
+
+    dependsOn: Build
+
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+    jobs:
+      - deployment: DeployWebAPI
+        displayName: 'Deploy EnterpriseLMS Web API'
+
+        environment: 'EnterpriseLMS-DEV'
+
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+
+                # Deployment consumes artifact only
+                - checkout: none
+
+                # Disable implicit artifact download
+                - download: none
+
+                # Download CI artifact
+                - download: current
+                  artifact: drop
+                  displayName: 'Download Deployment Artifact'
+
+                # Verify deployment package
+                - script: |
+                    echo "Verifying deployment package..."
+
+                    ZIP_FILE="$(Pipeline.Workspace)/drop/EnterpriseLMS.zip"
+
+                    if [ ! -f "$ZIP_FILE" ]; then
+                      echo "ERROR: Deployment ZIP not found"
+                      exit 1
+                    fi
+
+                    ls -lh "$ZIP_FILE"
+
+                    unzip -t "$ZIP_FILE"
+
+                    if [ $? -ne 0 ]; then
+                      echo "ERROR: Invalid ZIP package"
+                      exit 1
+                    fi
+
+                    echo "Deployment package verified"
+                  displayName: 'Verify Deployment Package'
+
+                # Deploy to Azure App Service
+                - task: AzureWebApp@1
+                  displayName: 'Deploy Web API to Azure App Service'
+                  inputs:
+                    azureSubscription: 'sc-enterpriselms-dev'
+                    appType: 'webAppLinux'
+                    appName: '$(azureWebAppName)'
+                    package: '$(Pipeline.Workspace)/drop/EnterpriseLMS.zip'
+                    runtimeStack: 'DOTNETCORE|10.0'
+                    startUpCommand: 'dotnet LMS.Api.dll'
+
+                # Deployment completion message
+                - script: |
+                    echo "Azure App Service deployment task completed."
+                    echo "Application: $(azureWebAppName)"
+                    echo "Build ID: $(Build.BuildId)"
+                    echo "Commit: $(Build.SourceVersion)"
+                    echo "Runtime verification is required."
+                  displayName: 'Deployment Summary'
