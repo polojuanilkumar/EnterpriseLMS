@@ -10,7 +10,8 @@ variables:
   buildConfiguration: 'Release'
   dotnetVersion: '10.0.x'
   solution: 'EnterpriseLMS.slnx'
-  webApiProject: 'EnterpriseLMS.API/EnterpriseLMS.API.csproj'
+  webApiProject: 'LMS.Api/LMS.Api.csproj'
+  testProject: 'LMS.Tests/LMS.Tests.csproj'
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -48,7 +49,8 @@ stages:
                 \( -name "*.sln" -o -name "*.slnx" -o -name "*.csproj" \)
 
               echo "Configured solution: $(solution)"
-              echo "Configured project: $(webApiProject)"
+              echo "Configured API project: $(webApiProject)"
+              echo "Configured test project: $(testProject)"
 
               if [ ! -f "$(Build.SourcesDirectory)/$(solution)" ]; then
                 echo "ERROR: Solution file not found"
@@ -60,7 +62,12 @@ stages:
                 exit 1
               fi
 
-              echo "Solution and project paths verified successfully"
+              if [ ! -f "$(Build.SourcesDirectory)/$(testProject)" ]; then
+                echo "ERROR: Test project file not found"
+                exit 1
+              fi
+
+              echo "All project paths verified successfully"
             displayName: 'Verify Solution and Project Paths'
 
           # Step 5: Restore NuGet packages
@@ -70,7 +77,7 @@ stages:
               command: 'restore'
               projects: '$(solution)'
 
-          # Step 6: Build solution
+          # Step 6: Build complete solution
           - task: DotNetCoreCLI@2
             displayName: 'Build Solution'
             inputs:
@@ -78,20 +85,23 @@ stages:
               projects: '$(solution)'
               arguments: '--configuration $(buildConfiguration) --no-restore'
 
-          # Step 7: Report test status
-          - script: |
-              echo "No test project configured."
-              echo "Automated unit tests were not executed."
-            displayName: 'Report Test Status'
+          # Step 7: Execute automated tests
+          - task: DotNetCoreCLI@2
+            displayName: 'Run Unit Tests'
+            inputs:
+              command: 'test'
+              projects: '$(testProject)'
+              arguments: '--configuration $(buildConfiguration)'
+              publishTestResults: true
 
-          # Step 8: Publish Web API
+          # Step 8: Publish only Web API
           - task: DotNetCoreCLI@2
             displayName: 'Publish Web API'
             inputs:
               command: 'publish'
               publishWebProjects: false
               projects: '$(webApiProject)'
-              arguments: '--configuration $(buildConfiguration) --no-build --no-restore --output $(Build.ArtifactStagingDirectory)/publish'
+              arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/publish'
               zipAfterPublish: false
               modifyOutputPath: false
 
