@@ -189,7 +189,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddDbContext<LMSDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString(
-            "DefaultConnection")).AddInterceptors(new AuditCommandGuard()));
+            "LMSConnection")).AddInterceptors(new AuditCommandGuard()));
 
 var protection = builder.Services.AddDataProtection();
 if (builder.Configuration["DataProtection:KeyPath"] is string keyPath)
