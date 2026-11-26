@@ -10,9 +10,13 @@ variables:
   buildConfiguration: 'Release'
   dotnetVersion: '10.0.x'
   solution: 'EnterpriseLMS.slnx'
+
   webApiProject: 'LMS.Api/LMS.Api.csproj'
+  webProject: 'LMS.Web/LMS.Web.csproj'
   testProject: 'LMS.Tests/LMS.Tests.csproj'
+
   azureWebAppName: 'app-enterpriselms-api-dev'
+  azureBffAppName: 'app-enterpriselms-web-dev'
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -28,7 +32,7 @@ stages:
 
     jobs:
       - job: BuildApplication
-        displayName: 'Build and Package Web API'
+        displayName: 'Build and Package API and BFF'
 
         steps:
 
@@ -47,14 +51,14 @@ stages:
           - script: dotnet --version
             displayName: 'Verify .NET SDK Version'
 
-          # Verify project paths
+          # Verify solution and project paths
           - script: |
               echo "Available solution and project files:"
 
               find "$(Build.SourcesDirectory)" -type f \
                 \( -name "*.sln" -o -name "*.slnx" -o -name "*.csproj" \)
 
-              for file in "$(solution)" "$(webApiProject)" "$(testProject)"; do
+              for file in "$(solution)" "$(webApiProject)" "$(webProject)" "$(testProject)"; do
                 if [ ! -f "$(Build.SourcesDirectory)/$file" ]; then
                   echo "ERROR: File not found: $file"
                   exit 1
@@ -71,7 +75,7 @@ stages:
               command: 'restore'
               projects: '$(solution)'
 
-          # Build solution
+          # Build complete solution
           - task: DotNetCoreCLI@2
             displayName: 'Build Solution'
             inputs:
@@ -88,41 +92,133 @@ stages:
               arguments: '--configuration $(buildConfiguration)'
               publishTestResults: true
 
-          # Publish API
+          # ==================================
+          # PUBLISH LMS.API
+          # ==================================
+
           - task: DotNetCoreCLI@2
             displayName: 'Publish Web API'
             inputs:
               command: 'publish'
               publishWebProjects: false
               projects: '$(webApiProject)'
-              arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/publish'
+              arguments: >
+                --configuration $(buildConfiguration)
+                --output $(Build.ArtifactStagingDirectory)/api-publish
               zipAfterPublish: false
               modifyOutputPath: false
 
-          # Create deployment ZIP
-          - task: ArchiveFiles@2
-            displayName: 'Create Deployment ZIP'
+          # ==================================
+          # PUBLISH LMS.WEB BFF
+          # ==================================
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish LMS.Web BFF'
             inputs:
-              rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/publish'
+              command: 'publish'
+              publishWebProjects: false
+              projects: '$(webProject)'
+              arguments: >
+                --configuration $(buildConfiguration)
+                --output $(Build.ArtifactStagingDirectory)/bff-publish
+              zipAfterPublish: false
+              modifyOutputPath: false
+
+          # Verify published applications
+          - script: |
+              set -e
+
+              API_PATH="$(Build.ArtifactStagingDirectory)/api-publish"
+              BFF_PATH="$(Build.ArtifactStagingDirectory)/bff-publish"
+
+              echo "Verifying published applications..."
+
+              if [ ! -f "$API_PATH/LMS.Api.dll" ]; then
+                echo "ERROR: LMS.Api.dll not found"
+                exit 1
+              fi
+
+              if [ ! -f "$BFF_PATH/LMS.Web.dll" ]; then
+                echo "ERROR: LMS.Web.dll not found"
+                exit 1
+              fi
+
+              echo "Both applications published successfully."
+
+              ls -lh "$API_PATH"
+              ls -lh "$BFF_PATH"
+
+              mkdir -p "$(Build.ArtifactStagingDirectory)/packages"
+
+            displayName: 'Verify Published Applications'
+
+          # ==================================
+          # PACKAGE LMS.API
+          # ==================================
+
+          - task: ArchiveFiles@2
+            displayName: 'Create API Deployment ZIP'
+            inputs:
+              rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/api-publish'
               includeRootFolder: false
               archiveType: 'zip'
-              archiveFile: '$(Build.ArtifactStagingDirectory)/EnterpriseLMS.zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/packages/EnterpriseLMS.zip'
               replaceExistingArchive: true
 
-          # Publish artifact
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Deployment Artifact'
+          # ==================================
+          # PACKAGE LMS.WEB BFF
+          # ==================================
+
+          - task: ArchiveFiles@2
+            displayName: 'Create BFF Deployment ZIP'
             inputs:
-              targetPath: '$(Build.ArtifactStagingDirectory)/EnterpriseLMS.zip'
+              rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/bff-publish'
+              includeRootFolder: false
+              archiveType: 'zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/packages/LMS.Web.zip'
+              replaceExistingArchive: true
+
+          # Verify both ZIP packages
+          - script: |
+              set -e
+
+              PACKAGE_PATH="$(Build.ArtifactStagingDirectory)/packages"
+
+              echo "Verifying deployment packages..."
+
+              for package in EnterpriseLMS.zip LMS.Web.zip; do
+
+                ZIP_FILE="$PACKAGE_PATH/$package"
+
+                if [ ! -f "$ZIP_FILE" ]; then
+                  echo "ERROR: Package not found: $package"
+                  exit 1
+                fi
+
+                unzip -tq "$ZIP_FILE"
+
+                ls -lh "$ZIP_FILE"
+
+              done
+
+              echo "Both deployment packages verified successfully."
+
+            displayName: 'Verify Both Deployment Packages'
+
+          # Publish both packages as a single artifact
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Deployment Artifacts'
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/packages'
               artifact: 'drop'
               publishLocation: 'pipeline'
 
   # ==========================================
-  # STAGE 2: CONTINUOUS DEPLOYMENT
+  # STAGE 2: DEPLOY LMS.API
   # ==========================================
 
   - stage: Deploy
-    displayName: 'CD - Deploy to Azure DEV'
+    displayName: 'CD - Deploy LMS.Api to Azure DEV'
 
     dependsOn: Build
 
@@ -150,30 +246,28 @@ stages:
                   artifact: drop
                   displayName: 'Download Deployment Artifact'
 
-                # Verify deployment package
+                # Verify API deployment package
                 - script: |
-                    echo "Verifying deployment package..."
+                    set -e
+
+                    echo "Verifying API deployment package..."
 
                     ZIP_FILE="$(Pipeline.Workspace)/drop/EnterpriseLMS.zip"
 
                     if [ ! -f "$ZIP_FILE" ]; then
-                      echo "ERROR: Deployment ZIP not found"
+                      echo "ERROR: API deployment ZIP not found"
                       exit 1
                     fi
 
                     ls -lh "$ZIP_FILE"
 
-                    unzip -t "$ZIP_FILE"
+                    unzip -tq "$ZIP_FILE"
 
-                    if [ $? -ne 0 ]; then
-                      echo "ERROR: Invalid ZIP package"
-                      exit 1
-                    fi
+                    echo "API deployment package verified"
 
-                    echo "Deployment package verified"
-                  displayName: 'Verify Deployment Package'
+                  displayName: 'Verify API Deployment Package'
 
-                # Deploy to Azure App Service
+                # Deploy API to Azure App Service
                 - task: AzureWebApp@1
                   displayName: 'Deploy Web API to Azure App Service'
                   inputs:
@@ -184,11 +278,87 @@ stages:
                     runtimeStack: 'DOTNETCORE|10.0'
                     startUpCommand: 'dotnet LMS.Api.dll'
 
-                # Deployment completion message
+                # API deployment summary
                 - script: |
-                    echo "Azure App Service deployment task completed."
+                    echo "API deployment task completed."
                     echo "Application: $(azureWebAppName)"
                     echo "Build ID: $(Build.BuildId)"
                     echo "Commit: $(Build.SourceVersion)"
                     echo "Runtime verification is required."
-                  displayName: 'Deployment Summary'
+
+                  displayName: 'API Deployment Summary'
+
+  # ==========================================
+  # STAGE 3: DEPLOY LMS.WEB BFF
+  # ==========================================
+
+  - stage: DeployBff
+    displayName: 'CD - Deploy LMS.Web BFF to Azure DEV'
+
+    dependsOn: Deploy
+
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+    jobs:
+      - deployment: DeployLmsWeb
+        displayName: 'Deploy EnterpriseLMS BFF'
+
+        environment: 'EnterpriseLMS-DEV'
+
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+
+                # Deployment consumes artifact only
+                - checkout: none
+
+                # Disable implicit artifact download
+                - download: none
+
+                # Download CI artifact
+                - download: current
+                  artifact: drop
+                  displayName: 'Download Deployment Artifact'
+
+                # Verify BFF deployment package
+                - script: |
+                    set -e
+
+                    echo "Verifying BFF deployment package..."
+
+                    ZIP_FILE="$(Pipeline.Workspace)/drop/LMS.Web.zip"
+
+                    if [ ! -f "$ZIP_FILE" ]; then
+                      echo "ERROR: BFF deployment ZIP not found"
+                      exit 1
+                    fi
+
+                    ls -lh "$ZIP_FILE"
+
+                    unzip -tq "$ZIP_FILE"
+
+                    echo "BFF deployment package verified"
+
+                  displayName: 'Verify BFF Deployment Package'
+
+                # Deploy BFF to Azure App Service
+                - task: AzureWebApp@1
+                  displayName: 'Deploy LMS.Web BFF to Azure App Service'
+                  inputs:
+                    azureSubscription: 'sc-enterpriselms-dev'
+                    appType: 'webAppLinux'
+                    appName: '$(azureBffAppName)'
+                    package: '$(Pipeline.Workspace)/drop/LMS.Web.zip'
+                    runtimeStack: 'DOTNETCORE|10.0'
+                    startUpCommand: 'dotnet LMS.Web.dll'
+
+                # BFF deployment summary
+                - script: |
+                    echo "BFF deployment task completed."
+                    echo "Application: $(azureBffAppName)"
+                    echo "Build ID: $(Build.BuildId)"
+                    echo "Commit: $(Build.SourceVersion)"
+                    echo "Runtime verification is required."
+
+                  displayName: 'BFF Deployment Summary'
